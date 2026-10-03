@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { DatabaseStatusBanner } from "@/components/database/DatabaseStatusBanner";
 import { GlobalNav } from "@/components/navigation/GlobalNav";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { APP_NAME, APP_SHORT_NAME, THEME_COLOR } from "@/lib/app";
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
+        <DatabaseStatusBanner />
         <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))]">{children}</main>
         <GlobalNav />
         <UpdatePrompt />
