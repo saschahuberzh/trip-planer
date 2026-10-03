@@ -27,12 +27,20 @@ Use Chrome (DevTools → Application) or Safari.
 3. Go offline: stop the server (Ctrl+C) **and/or** tick "Offline" in DevTools.
 4. Reload `/` → Trips page renders. Open `/settings` → Settings renders.
 5. Open `/trips/<new random UUID>/plan` (e.g. from `crypto.randomUUID()` in the console):
-   - "Plan" renders and the header shows exactly that UUID.
+   - "Plan" renders and the header shows "Trip not found" (no trip has that ID).
    - The URL is unchanged.
 6. Repeat for `/trips/<uuid>`, `/map`, `/places`, `/budget`, `/accommodation`,
    `/bookings`, `/plan/<dayId>` and `/places/<placeId>` (day/place pages show their ID).
 7. While offline, tap other section tabs and the bottom navigation → correct
    section renders with the same trip ID.
+7a. Trips (Phase 3), still offline:
+   - On `/` create a trip with several countries, a budget and a cover photo →
+     the app opens `/trips/<new id>` and the header shows the trip's name and dates.
+   - Reload → the overview still shows the trip; open the section tabs → the
+     header shows the same trip.
+   - Edit the trip (shorten its dates, change the cover) → changes appear immediately.
+   - Delete the trip → confirmation lists what will be deleted; after confirming the
+     app returns to `/` and the trip is gone.
 8. Open an unknown path (e.g. `/nope`) → "You are offline" page.
 9. Update flow:
    - Go back online, change some visible text, `npm run build && npm run start`.

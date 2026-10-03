@@ -10,10 +10,13 @@ import { createSafetyBackupRepository } from "./safetyBackupRepository";
 import { createActivityRepository, createTransportRepository } from "./timelineRepositories";
 import { createTripDayRepository } from "./tripDayRepository";
 import { createTripRepository } from "./tripRepository";
+import { writeTransaction } from "./shared";
 
 export * from "./errors";
 export { TripDayNotEmptyError } from "./tripDayRepository";
 export type { EntityPatch, NewEntity } from "./shared";
+export type { NewImageAsset } from "./imageRepository";
+export type { NewTrip, TripPatch } from "./tripRepository";
 
 export function createRepositories(db: TravelDatabase) {
   return {
@@ -28,6 +31,13 @@ export function createRepositories(db: TravelDatabase) {
     images: createImageRepository(db),
     appMeta: createAppMetaRepository(db),
     safetyBackups: createSafetyBackupRepository(db),
+    /**
+     * Runs several repository calls atomically: if `fn` throws, nothing is written.
+     * `fn` must only await repository calls (no fetches, timers or image decoding).
+     */
+    transaction<R>(fn: () => Promise<R>): Promise<R> {
+      return writeTransaction(db, fn);
+    },
   };
 }
 

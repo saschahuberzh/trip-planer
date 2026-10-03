@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  calendarDaysInclusive,
   compareCalendarDates,
   durationMinutes,
   eachDateInRange,
   formatCalendarDate,
+  formatCalendarDateRange,
   formatLocalDateTime,
   isCalendarDate,
   isLocalDateTime,
@@ -55,6 +57,21 @@ describe("calendar dates", () => {
   it("formats without shifting the date", () => {
     expect(formatCalendarDate("2026-06-12", "en-US", { dateStyle: "long" })).toBe("June 12, 2026");
     expect(formatCalendarDate("2026-01-01", "en-US", { dateStyle: "long" })).toBe("January 1, 2026");
+  });
+
+  it("counts days inclusively across month and DST boundaries", () => {
+    expect(calendarDaysInclusive("2026-06-12", "2026-06-12")).toBe(1);
+    expect(calendarDaysInclusive("2026-03-28", "2026-04-02")).toBe(6);
+    expect(calendarDaysInclusive("2026-10-24", "2026-10-26")).toBe(3);
+  });
+
+  it("formats date ranges without shifting dates", () => {
+    expect(formatCalendarDateRange("2026-06-12", "2026-06-14", "en-GB")).toBe("12–14 Jun 2026");
+    // ICU may use thin spaces around the dash.
+    expect(formatCalendarDateRange("2026-12-30", "2027-01-02", "en-GB").replace(/\s/g, " ")).toBe(
+      "30 Dec 2026 – 2 Jan 2027",
+    );
+    expect(formatCalendarDateRange("2026-06-12", "2026-06-12", "en-GB")).toBe("12 Jun 2026");
   });
 });
 

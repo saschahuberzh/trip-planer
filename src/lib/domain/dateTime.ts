@@ -204,3 +204,21 @@ export function formatLocalDateTime(
     localWallMs(value.local),
   );
 }
+
+/** Number of calendar days from start to end, inclusive (e.g. a 3-day trip). */
+export function calendarDaysInclusive(start: string, end: string): number {
+  return Math.round((calendarDateToUtcMs(end) - calendarDateToUtcMs(start)) / MS_PER_DAY) + 1;
+}
+
+/** Formats a calendar date range compactly, e.g. "12–14 Jun 2026". */
+export function formatCalendarDateRange(
+  start: string,
+  end: string,
+  locale?: string,
+  options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" },
+): string {
+  return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).formatRange(
+    calendarDateToUtcMs(start),
+    calendarDateToUtcMs(end),
+  );
+}
