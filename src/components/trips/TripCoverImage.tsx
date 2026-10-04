@@ -36,7 +36,11 @@ export function TripCoverImage({ imageId, seed, label, className = "" }: TripCov
   );
   const blob = image.status === "ready" ? image.data?.blob : undefined;
 
-  if (blob !== undefined) return <BlobImage blob={blob} alt="" className={`object-cover ${className}`} />;
+  // Neutral while the photo loads; the coloured placeholder is only for trips without one.
+  if (blob !== undefined) return <BlobImage blob={blob} alt="" className={`bg-slate-200 object-cover ${className}`} />;
+  if (imageId !== undefined && image.status === "loading") {
+    return <div aria-hidden="true" className={`animate-pulse bg-slate-200 ${className}`} />;
+  }
   return (
     <div
       aria-hidden="true"
