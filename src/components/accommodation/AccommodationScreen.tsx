@@ -42,7 +42,7 @@ function AccommodationContent({ itinerary }: { itinerary: Itinerary }) {
   const openNights = coverage.uncovered.length;
 
   return (
-    <section className="mx-auto max-w-md space-y-3 px-4 py-5">
+    <section className="mx-auto max-w-md space-y-3 px-4 py-5 lg:max-w-6xl lg:px-8 lg:py-8">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-slate-600">
           {tripNights === 0
@@ -70,7 +70,7 @@ function AccommodationContent({ itinerary }: { itinerary: Itinerary }) {
           </Button>
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           {accommodations.map((accommodation) => (
             <li key={accommodation.id}>
               <AccommodationCard

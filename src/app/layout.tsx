@@ -37,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]">
         <DatabaseStatusBanner />
         <OfflineIndicator />
-        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))]">{children}</main>
+        <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-56">{children}</main>
         <GlobalNav />
         <UpdatePrompt />
       </body>

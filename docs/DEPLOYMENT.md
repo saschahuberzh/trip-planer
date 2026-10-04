@@ -52,6 +52,15 @@ its own origin with its own (empty) data. So:
 
 ## Last verification
 
-- Local production build (`next start`): `npm run verify:deployment -- http://localhost:3123
-  --allow-http` → all checks passed (61 precached URLs).
-- Vercel deployment: not yet deployed.
+Production: https://trip-planer-sigma.vercel.app (2026-10-04)
+
+- `npm run verify:deployment -- https://trip-planer-sigma.vercel.app`: all 25 checks passed
+  (HTTPS, HTTP → HTTPS redirect (308), PWA meta tags, manifest and icons, `sw.js` not cached,
+  all 66 precached URLs return 200, MapLibre worker MIME type).
+- `PLAYWRIGHT_BASE_URL=https://trip-planer-sigma.vercel.app npx playwright test`: offline start,
+  all features offline, backup export/restore — 3 of 3 passed.
+- Online features from the production origin: Photon place search and OpenFreeMap tiles work.
+- Update flow in production: pending (needs a second deployment).
+- iPhone installation: pending (`docs/IPHONE_VERIFICATION.md`).
+
+Local production build: `npm run verify:deployment -- http://localhost:3123 --allow-http` passed.

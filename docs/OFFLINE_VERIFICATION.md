@@ -98,7 +98,8 @@ Use Chrome (DevTools → Application) or Safari.
 
 ## Automated checks (Phase 10)
 
-`npm run test:e2e` builds the app and runs Playwright (Chromium, iPhone-sized, touch):
+`npm run test:e2e` builds the app and runs Playwright (Chromium, iPhone-sized, touch).
+Against a deployment: `PLAYWRIGHT_BASE_URL=https://… npx playwright test`.
 
 - `e2e/offline.spec.ts` – the acceptance test of IMPLEMENTATION_PLAN.md Phase 10: open online,
   create a trip, close, go offline, start again → the trip is there and editable; a trip

@@ -23,7 +23,7 @@ export function TripSectionNav() {
 
   return (
     <nav aria-label="Trip sections" className="border-b border-slate-200 bg-white">
-      <ul className="mx-auto flex max-w-md gap-2 overflow-x-auto px-4 py-2">
+      <ul className="mx-auto flex max-w-md gap-2 overflow-x-auto px-4 py-2 lg:max-w-6xl lg:flex-wrap lg:overflow-visible lg:px-8 lg:py-3">
         {TRIP_SECTIONS.map((section) => {
           const label = SECTION_LABELS[section];
           // Before hydration the trip ID is unknown; render inert tabs.

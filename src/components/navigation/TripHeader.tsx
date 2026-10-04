@@ -11,8 +11,8 @@ export function TripHeader() {
   const trip = useCurrentTrip();
 
   return (
-    <header className="bg-white px-4 pt-3">
-      <div className="mx-auto max-w-md">
+    <header className="bg-white px-4 pt-3 lg:px-0 lg:pt-6">
+      <div className="mx-auto max-w-md lg:max-w-6xl lg:px-8">
         <Link
           href={appRoutePath({ name: "trips" })}
           className="-ml-2 inline-flex min-h-11 items-center gap-1 rounded-xl pr-3 pl-1 text-sm font-medium text-teal-700"

@@ -65,7 +65,10 @@ export function Sheet({ open, onClose, title, children, footer, dismissible = tr
       // activity form) must not submit that outer form: React events bubble along
       // the component tree.
       onSubmit={(event) => event.stopPropagation()}
-      className="inset-x-0 mx-auto mt-auto mb-0 max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-900/40 open:flex sm:mb-auto sm:rounded-3xl"
+      // Phones: a fixed-height sheet from below the status bar to the bottom of the *visible*
+      // area (dvh excludes Safari's toolbars). A content-sized sheet anchored with margins
+      // ended up mostly hidden behind iOS Safari's toolbar. Larger screens: centred dialog.
+      className="inset-x-0 mx-auto mt-[calc(env(safe-area-inset-top)+2.5rem)] mb-0 h-[calc(100dvh-env(safe-area-inset-top)-2.5rem)] max-h-none w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-900/40 open:flex sm:my-auto sm:h-auto sm:max-h-[85dvh] sm:rounded-3xl"
     >
       {open && (
         <>
@@ -81,7 +84,7 @@ export function Sheet({ open, onClose, title, children, footer, dismissible = tr
               <CloseIcon />
             </button>
           </header>
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">{children}</div>
           {footer && (
             <footer className="border-t border-slate-100 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
               {footer}

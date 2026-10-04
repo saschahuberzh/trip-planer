@@ -18,6 +18,19 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Tailwind 4 no longer sets a pointer cursor; with a mouse, clickable things should look clickable. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="radio"],
+  label:has(> input[type="radio"]),
+  label:has(> input[type="checkbox"]),
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

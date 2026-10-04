@@ -39,7 +39,7 @@ export function TripsScreen() {
   const hasTrips = data.status === "ready" && data.data.groups.length > 0;
 
   return (
-    <section className="mx-auto max-w-md px-4 pt-6 pb-8">
+    <section className="mx-auto max-w-md px-4 pt-6 pb-8 lg:max-w-6xl lg:px-8 lg:pt-10">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-3xl font-bold tracking-tight">Trips</h1>
         {hasTrips && (
@@ -66,7 +66,7 @@ export function TripsScreen() {
             <h2 id={`trips-${group.status}`} className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
               {TRIP_GROUP_TITLES[group.status]}
             </h2>
-            <ul className="space-y-4">
+            <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
               {group.trips.map((trip) => (
                 <li key={trip.id}>
                   <TripCard trip={trip} onShowActions={(selected) => setDialog({ type: "actions", trip: selected })} />

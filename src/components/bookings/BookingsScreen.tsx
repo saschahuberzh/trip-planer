@@ -51,7 +51,7 @@ function BookingsContent({ itinerary }: { itinerary: Itinerary }) {
   ].filter((section) => section.items.length > 0);
 
   return (
-    <section className="mx-auto max-w-md space-y-4 px-4 py-5">
+    <section className="mx-auto max-w-md space-y-4 px-4 py-5 lg:max-w-6xl lg:px-8 lg:py-8">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-slate-600">
           {bookings.data.length === 0 ? "No bookings yet" : `${bookings.data.length} booking${bookings.data.length === 1 ? "" : "s"}`}
@@ -80,7 +80,7 @@ function BookingsContent({ itinerary }: { itinerary: Itinerary }) {
         sections.map((section) => (
           <section key={section.title} aria-label={section.title} className="space-y-2">
             <h2 className="px-1 text-sm font-semibold tracking-wide text-slate-500 uppercase">{section.title}</h2>
-            <ul className="space-y-3">
+            <ul className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
               {section.items.map((booking) => (
                 <li key={booking.id}>
                   <BookingCard booking={booking} link={linkOf(booking)} past={section.title === "Past"} onOpen={() => setTarget({ mode: "edit", booking })} />

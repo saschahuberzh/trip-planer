@@ -20,7 +20,7 @@ export function OfflineIndicator() {
   );
   if (online) return null;
   return (
-    <p role="status" className="bg-slate-800 px-4 py-1.5 text-center text-xs font-medium text-white">
+    <p role="status" className="bg-slate-800 px-4 py-1.5 text-center text-xs font-medium text-white lg:pl-60">
       Offline · your trips are saved on this device. Maps and place search need internet.
     </p>
   );

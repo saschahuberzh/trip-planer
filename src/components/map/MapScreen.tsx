@@ -129,199 +129,204 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
   const allLocated = [...places.values()].filter(isLocated);
 
   return (
-    <section className="mx-auto max-w-3xl space-y-3 px-4 py-4">
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1" role="radiogroup" aria-label="Map view">
-        {MAP_VIEW_MODES.map((view) => (
-          <button
-            key={view}
-            type="button"
-            role="radio"
-            aria-checked={state.view === view}
-            onClick={() => update({ view, dayId: view === "day" ? (state.dayId ?? days[0]?.day.id) : view === "all" ? undefined : state.dayId })}
-            className={`min-h-10 rounded-lg text-sm font-medium ${state.view === view ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}
-          >
-            {VIEW_LABELS[view]}
-          </button>
-        ))}
-      </div>
-
-      {state.view !== "route" && (
-        <div className="flex gap-2">
-          <select
-            aria-label="Day"
-            value={state.dayId ?? ""}
-            onChange={(event) => update({ dayId: event.target.value === "" ? undefined : event.target.value })}
-            className={`${inputClass} min-w-0 flex-1 bg-white`}
-          >
-            {state.view === "all" && <option value="">All days</option>}
-            {dayChoices.map((timeline) => (
-              <option key={timeline.day.id} value={timeline.day.id}>
-                {dayOptionLabel(timeline, places)}
-              </option>
-            ))}
-          </select>
-          {state.view === "all" && (
-            <select
-              aria-label="Category"
-              value={state.type ?? ""}
-              onChange={(event) => update({ type: event.target.value === "" ? undefined : (event.target.value as PlaceType) })}
-              className={`${inputClass} w-auto max-w-[45%] bg-white`}
+    <section className="mx-auto max-w-3xl space-y-3 px-4 py-4 lg:grid lg:max-w-none lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-6 lg:space-y-0 lg:px-8 lg:py-6">
+      {/* Large screens: big map on the left, details and lists on the right. */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1" role="radiogroup" aria-label="Map view">
+          {MAP_VIEW_MODES.map((view) => (
+            <button
+              key={view}
+              type="button"
+              role="radio"
+              aria-checked={state.view === view}
+              onClick={() => update({ view, dayId: view === "day" ? (state.dayId ?? days[0]?.day.id) : view === "all" ? undefined : state.dayId })}
+              className={`min-h-10 rounded-lg text-sm font-medium ${state.view === view ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}
             >
-              <option value="">All categories</option>
-              {PLACE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {PLACE_TYPE_LABELS[type]}
+              {VIEW_LABELS[view]}
+            </button>
+          ))}
+        </div>
+
+        {state.view !== "route" && (
+          <div className="flex gap-2">
+            <select
+              aria-label="Day"
+              value={state.dayId ?? ""}
+              onChange={(event) => update({ dayId: event.target.value === "" ? undefined : event.target.value })}
+              className={`${inputClass} min-w-0 flex-1 bg-white`}
+            >
+              {state.view === "all" && <option value="">All days</option>}
+              {dayChoices.map((timeline) => (
+                <option key={timeline.day.id} value={timeline.day.id}>
+                  {dayOptionLabel(timeline, places)}
                 </option>
               ))}
             </select>
+            {state.view === "all" && (
+              <select
+                aria-label="Category"
+                value={state.type ?? ""}
+                onChange={(event) => update({ type: event.target.value === "" ? undefined : (event.target.value as PlaceType) })}
+                className={`${inputClass} w-auto max-w-[45%] bg-white`}
+              >
+                <option value="">All categories</option>
+                {PLACE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {PLACE_TYPE_LABELS[type]}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
+        <div className="relative">
+          <MapView
+            markers={model.markers}
+            segments={model.segments}
+            selectedPlaceId={selectedId}
+            selectedStayId={selectedStayId}
+            onSelectPlace={selectPlace}
+            onSelectStay={selectStay}
+            onSelectTransport={selectTransport}
+            fitKey={fitKey}
+            initialCenter={placesCenter(allLocated)}
+            className="h-[55dvh] min-h-72 rounded-3xl ring-1 ring-slate-200 lg:h-[calc(100dvh-15rem)] lg:min-h-[28rem]"
+          />
+          {model.markers.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFitRequest((count) => count + 1)}
+              className="absolute top-2.5 left-2.5 min-h-9 rounded-lg bg-white px-3 text-sm font-semibold text-slate-700 shadow ring-1 ring-slate-200"
+            >
+              Fit
+            </button>
           )}
         </div>
-      )}
+      </div>
+      <div className="space-y-3 lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto lg:pb-4">
+        {selected !== undefined && (
+          <SelectedPlace
+            tripId={trip.id}
+            place={selected}
+            days={daysByPlace.get(selected.id) ?? []}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
 
-      <div className="relative">
-        <MapView
-          markers={model.markers}
-          segments={model.segments}
-          selectedPlaceId={selectedId}
-          selectedStayId={selectedStayId}
-          onSelectPlace={selectPlace}
-          onSelectStay={selectStay}
-          onSelectTransport={selectTransport}
-          fitKey={fitKey}
-          initialCenter={placesCenter(allLocated)}
-          className="h-[55dvh] min-h-72 rounded-3xl ring-1 ring-slate-200"
-        />
-        {model.markers.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setFitRequest((count) => count + 1)}
-            className="absolute top-2.5 left-2.5 min-h-9 rounded-lg bg-white px-3 text-sm font-semibold text-slate-700 shadow ring-1 ring-slate-200"
-          >
-            Fit
-          </button>
+        {selectedTransport !== undefined && (
+          <SelectedTransport
+            transport={selectedTransport.transport}
+            timeline={selectedTransport.timeline}
+            places={places}
+            onEdit={() => setEditingTransport(selectedTransport.transport)}
+            onClose={() => setSelectedTransportId(null)}
+          />
+        )}
+
+        {selectedStay !== undefined && (
+          <SelectedStay
+            tripId={trip.id}
+            accommodation={selectedStay}
+            location={stayLocation(selectedStay, places)}
+            onClose={() => setSelectedStayId(null)}
+          />
+        )}
+
+        <ViewEmptyState view={state.view} model={model} tripId={trip.id} hasPlaces={places.size > 0} />
+
+        {model.stops.length > 0 && (
+          <ol className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200" aria-label="Stops">
+            {model.stops.map((stop) => (
+              <li key={`${stop.number}-${stop.place.id}`}>
+                <button
+                  type="button"
+                  onClick={() => selectPlace(stop.place.id)}
+                  className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
+                >
+                  {state.view === "route" ? (
+                    <span className="flex h-7 min-w-14 shrink-0 items-center justify-center rounded-full bg-teal-700 px-2 text-xs font-semibold whitespace-nowrap text-white">
+                      {stop.dayNumbers.length > 0 ? `Day ${formatDayRanges(stop.dayNumbers)}` : "—"}
+                    </span>
+                  ) : (
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-700 text-xs font-semibold text-white">
+                      {stop.number}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium text-slate-900">{stop.place.name}</span>
+                    <span className="block truncate font-mono text-xs text-slate-500">{formatCoordinates(stop.place)}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        {state.view === "all" && model.markers.length > 0 && (
+          <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200" aria-label="Places on the map">
+            {model.markers.map((marker) =>
+              marker.kind === "place" ? (
+                <li key={`place:${marker.placeId}`}>
+                  <button
+                    type="button"
+                    onClick={() => selectPlace(marker.placeId)}
+                    className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
+                  >
+                    <span aria-hidden="true">{PLACE_TYPE_SYMBOLS[marker.type]}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-slate-900">{marker.name}</span>
+                      <span className="block truncate text-xs text-slate-500">
+                        {marker.dayNumbers.length === 0 ? "Not planned" : `Day ${formatDayRanges(marker.dayNumbers)}`} ·{" "}
+                        <span className="font-mono">{formatCoordinates(marker)}</span>
+                      </span>
+                    </span>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PLACE_TYPE_BADGE[marker.type]}`}>
+                      {PLACE_TYPE_LABELS[marker.type]}
+                    </span>
+                  </button>
+                </li>
+              ) : (
+                <li key={`stay:${marker.accommodationId}`}>
+                  <button
+                    type="button"
+                    onClick={() => selectStay(marker.accommodationId)}
+                    className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
+                  >
+                    <span aria-hidden="true">🛏️</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-slate-900">{marker.name}</span>
+                      <span className="block truncate font-mono text-xs text-slate-500">{formatCoordinates(marker)}</span>
+                    </span>
+                    <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">Stay</span>
+                  </button>
+                </li>
+              ),
+            )}
+          </ul>
+        )}
+
+        {model.unlocated.length > 0 && (
+          <section aria-labelledby="unlocated-heading" className="rounded-3xl bg-white shadow-sm ring-1 ring-amber-200">
+            <h2 id="unlocated-heading" className="px-4 pt-3 text-sm font-semibold text-amber-800">
+              Not on map
+            </h2>
+            <p className="px-4 text-sm text-slate-500">These places have no position yet.</p>
+            <ul className="divide-y divide-slate-100">
+              {model.unlocated.map((place) => (
+                <li key={place.id} className="flex items-center gap-2 py-2 pr-2 pl-4">
+                  <span className="min-w-0 flex-1 truncate font-medium text-slate-900">{place.name}</span>
+                  <Button variant="secondary" onClick={() => setLocating(place)} className="shrink-0">
+                    <MapPinIcon />
+                    Set position
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
       </div>
 
-      {selected !== undefined && (
-        <SelectedPlace
-          tripId={trip.id}
-          place={selected}
-          days={daysByPlace.get(selected.id) ?? []}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
-
-      {selectedTransport !== undefined && (
-        <SelectedTransport
-          transport={selectedTransport.transport}
-          timeline={selectedTransport.timeline}
-          places={places}
-          onEdit={() => setEditingTransport(selectedTransport.transport)}
-          onClose={() => setSelectedTransportId(null)}
-        />
-      )}
-
-      {selectedStay !== undefined && (
-        <SelectedStay
-          tripId={trip.id}
-          accommodation={selectedStay}
-          location={stayLocation(selectedStay, places)}
-          onClose={() => setSelectedStayId(null)}
-        />
-      )}
-
-      <ViewEmptyState view={state.view} model={model} tripId={trip.id} hasPlaces={places.size > 0} />
-
-      {model.stops.length > 0 && (
-        <ol className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200" aria-label="Stops">
-          {model.stops.map((stop) => (
-            <li key={`${stop.number}-${stop.place.id}`}>
-              <button
-                type="button"
-                onClick={() => selectPlace(stop.place.id)}
-                className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
-              >
-                {state.view === "route" ? (
-                  <span className="flex h-7 min-w-14 shrink-0 items-center justify-center rounded-full bg-teal-700 px-2 text-xs font-semibold whitespace-nowrap text-white">
-                    {stop.dayNumbers.length > 0 ? `Day ${formatDayRanges(stop.dayNumbers)}` : "—"}
-                  </span>
-                ) : (
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-700 text-xs font-semibold text-white">
-                    {stop.number}
-                  </span>
-                )}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium text-slate-900">{stop.place.name}</span>
-                  <span className="block truncate font-mono text-xs text-slate-500">{formatCoordinates(stop.place)}</span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      {state.view === "all" && model.markers.length > 0 && (
-        <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200" aria-label="Places on the map">
-          {model.markers.map((marker) =>
-            marker.kind === "place" ? (
-              <li key={`place:${marker.placeId}`}>
-                <button
-                  type="button"
-                  onClick={() => selectPlace(marker.placeId)}
-                  className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
-                >
-                  <span aria-hidden="true">{PLACE_TYPE_SYMBOLS[marker.type]}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-slate-900">{marker.name}</span>
-                    <span className="block truncate text-xs text-slate-500">
-                      {marker.dayNumbers.length === 0 ? "Not planned" : `Day ${formatDayRanges(marker.dayNumbers)}`} ·{" "}
-                      <span className="font-mono">{formatCoordinates(marker)}</span>
-                    </span>
-                  </span>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PLACE_TYPE_BADGE[marker.type]}`}>
-                    {PLACE_TYPE_LABELS[marker.type]}
-                  </span>
-                </button>
-              </li>
-            ) : (
-              <li key={`stay:${marker.accommodationId}`}>
-                <button
-                  type="button"
-                  onClick={() => selectStay(marker.accommodationId)}
-                  className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
-                >
-                  <span aria-hidden="true">🛏️</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-slate-900">{marker.name}</span>
-                    <span className="block truncate font-mono text-xs text-slate-500">{formatCoordinates(marker)}</span>
-                  </span>
-                  <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">Stay</span>
-                </button>
-              </li>
-            ),
-          )}
-        </ul>
-      )}
-
-      {model.unlocated.length > 0 && (
-        <section aria-labelledby="unlocated-heading" className="rounded-3xl bg-white shadow-sm ring-1 ring-amber-200">
-          <h2 id="unlocated-heading" className="px-4 pt-3 text-sm font-semibold text-amber-800">
-            Not on map
-          </h2>
-          <p className="px-4 text-sm text-slate-500">These places have no position yet.</p>
-          <ul className="divide-y divide-slate-100">
-            {model.unlocated.map((place) => (
-              <li key={place.id} className="flex items-center gap-2 py-2 pr-2 pl-4">
-                <span className="min-w-0 flex-1 truncate font-medium text-slate-900">{place.name}</span>
-                <Button variant="secondary" onClick={() => setLocating(place)} className="shrink-0">
-                  <MapPinIcon />
-                  Set position
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <MapPickerSheet
         open={locating !== null}

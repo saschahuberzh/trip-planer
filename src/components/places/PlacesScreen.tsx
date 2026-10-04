@@ -47,7 +47,7 @@ function PlacesContent({ data }: { data: TripPlaces }) {
   const allPlaces = places.map((item) => item.place);
 
   return (
-    <section className="mx-auto max-w-md space-y-3 px-4 py-5">
+    <section className="mx-auto max-w-md space-y-3 px-4 py-5 lg:max-w-4xl lg:px-8 lg:py-8">
       <div className="flex gap-2">
         <div className="relative flex-1">
           <SearchIcon className="pointer-events-none absolute top-3 left-3 size-5 text-slate-400" />

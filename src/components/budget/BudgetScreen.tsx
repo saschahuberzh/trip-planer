@@ -65,90 +65,101 @@ function BudgetContent({ itinerary, expenses, bookings }: { itinerary: Itinerary
     filter === "all" ? true : filter === "unconverted" ? !isConverted(expense) : expense.status === filter,
   );
 
+  // Phones: overview, expenses, categories, days. Large screens: summary column on the left,
+  // expenses on the right. Column wrappers are display: contents on phones.
   return (
-    <section className="mx-auto max-w-md space-y-4 px-4 py-5">
-      <Overview trip={trip} overview={overview} onShowUnconverted={() => setFilter("unconverted")} />
-
-      <section aria-labelledby="expenses-heading" className="space-y-2">
-        <div className="flex items-center justify-between gap-3 px-1">
-          <h2 id="expenses-heading" className="text-sm font-semibold tracking-wide text-slate-500 uppercase">
-            Expenses
-          </h2>
-          <Button onClick={newExpense} className="shrink-0">
-            <PlusIcon />
-            Add expense
-          </Button>
+    <section className="mx-auto flex max-w-md flex-col gap-4 px-4 py-5 lg:grid lg:max-w-6xl lg:grid-cols-[24rem_minmax(0,1fr)] lg:items-start lg:gap-6 lg:px-8 lg:py-8">
+      <div className="contents lg:flex lg:flex-col lg:gap-4">
+        <div className="order-1 lg:order-none">
+          <Overview trip={trip} overview={overview} onShowUnconverted={() => setFilter("unconverted")} />
         </div>
-        {expenses.length > 0 && (
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="radiogroup" aria-label="Filter expenses">
-            {(Object.keys(FILTER_LABELS) as Filter[]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                role="radio"
-                aria-checked={filter === key}
-                onClick={() => setFilter(key)}
-                className={`min-h-10 shrink-0 rounded-full px-3.5 text-sm font-medium ${
-                  filter === key ? "bg-teal-700 text-white" : "bg-white text-slate-700 ring-1 ring-slate-200"
-                }`}
-              >
-                {FILTER_LABELS[key]}
-              </button>
-            ))}
-          </div>
-        )}
-        {expenses.length === 0 ? (
-          <div className="rounded-3xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-200">
-            <p className="text-3xl" aria-hidden="true">
-              💰
-            </p>
-            <h3 className="mt-2 text-lg font-semibold">No expenses yet</h3>
-            <p className="mt-1 text-slate-600">
-              Record costs in any currency — paid or planned. Add the exchange rate now or later.
-            </p>
-          </div>
-        ) : visible.length === 0 ? (
-          <p className="rounded-3xl bg-white p-4 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">No expenses match this filter.</p>
-        ) : (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
-            {visible.map((expense) => (
-              <li key={expense.id}>
-                <ExpenseRow trip={trip} expense={expense} onOpen={() => setTarget({ mode: "edit", expense })} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {overview.byCategory.length > 0 && (
-        <Breakdown title="By category">
-          {overview.byCategory.map((row) => (
-            <BreakdownRow
-              key={row.category}
-              label={`${EXPENSE_CATEGORY_SYMBOLS[row.category]} ${EXPENSE_CATEGORY_LABELS[row.category]}`}
-              totals={row.total}
-              planned={row.planned}
-              base={trip.baseCurrency}
-              max={Math.max(...overview.byCategory.map((item) => item.total.converted))}
-            />
-          ))}
-        </Breakdown>
-      )}
-
-      {overview.byDay.length > 0 && (
-        <Breakdown title="Per day">
-          {overview.byDay.map((row) => (
-            <BreakdownRow
-              key={row.date ?? "undated"}
-              label={dayLabel(trip, row.date)}
-              totals={row.total}
-              planned={row.planned}
-              base={trip.baseCurrency}
-              max={Math.max(...overview.byDay.map((item) => item.total.converted))}
-            />
-          ))}
-        </Breakdown>
-      )}
+        <div className="order-3 empty:hidden lg:order-none">
+          {overview.byCategory.length > 0 && (
+            <Breakdown title="By category">
+              {overview.byCategory.map((row) => (
+                <BreakdownRow
+                  key={row.category}
+                  label={`${EXPENSE_CATEGORY_SYMBOLS[row.category]} ${EXPENSE_CATEGORY_LABELS[row.category]}`}
+                  totals={row.total}
+                  planned={row.planned}
+                  base={trip.baseCurrency}
+                  max={Math.max(...overview.byCategory.map((item) => item.total.converted))}
+                />
+              ))}
+            </Breakdown>
+          )}
+        </div>
+        <div className="order-4 empty:hidden lg:order-none">
+          {overview.byDay.length > 0 && (
+            <Breakdown title="Per day">
+              {overview.byDay.map((row) => (
+                <BreakdownRow
+                  key={row.date ?? "undated"}
+                  label={dayLabel(trip, row.date)}
+                  totals={row.total}
+                  planned={row.planned}
+                  base={trip.baseCurrency}
+                  max={Math.max(...overview.byDay.map((item) => item.total.converted))}
+                />
+              ))}
+            </Breakdown>
+          )}
+        </div>
+      </div>
+      <div className="contents lg:block">
+        <div className="order-2 lg:order-none">
+          <section aria-labelledby="expenses-heading" className="space-y-2">
+            <div className="flex items-center justify-between gap-3 px-1">
+              <h2 id="expenses-heading" className="text-sm font-semibold tracking-wide text-slate-500 uppercase">
+                Expenses
+              </h2>
+              <Button onClick={newExpense} className="shrink-0">
+                <PlusIcon />
+                Add expense
+              </Button>
+            </div>
+            {expenses.length > 0 && (
+              <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="radiogroup" aria-label="Filter expenses">
+                {(Object.keys(FILTER_LABELS) as Filter[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={filter === key}
+                    onClick={() => setFilter(key)}
+                    className={`min-h-10 shrink-0 rounded-full px-3.5 text-sm font-medium ${
+                      filter === key ? "bg-teal-700 text-white" : "bg-white text-slate-700 ring-1 ring-slate-200"
+                    }`}
+                  >
+                    {FILTER_LABELS[key]}
+                  </button>
+                ))}
+              </div>
+            )}
+            {expenses.length === 0 ? (
+              <div className="rounded-3xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-200">
+                <p className="text-3xl" aria-hidden="true">
+                  💰
+                </p>
+                <h3 className="mt-2 text-lg font-semibold">No expenses yet</h3>
+                <p className="mt-1 text-slate-600">
+                  Record costs in any currency — paid or planned. Add the exchange rate now or later.
+                </p>
+              </div>
+            ) : visible.length === 0 ? (
+              <p className="rounded-3xl bg-white p-4 text-sm text-slate-600 shadow-sm ring-1 ring-slate-200">No expenses match this filter.</p>
+            ) : (
+              <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+                {visible.map((expense) => (
+                  <li key={expense.id}>
+                    <ExpenseRow trip={trip} expense={expense} onOpen={() => setTarget({ mode: "edit", expense })} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      </div>
 
       <ExpenseSheet itinerary={itinerary} expenses={expenses} bookings={bookings} target={target} onClose={() => setTarget(null)} />
     </section>

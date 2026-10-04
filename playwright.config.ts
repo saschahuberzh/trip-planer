@@ -5,8 +5,11 @@ import { defineConfig } from "@playwright/test";
  * build (the service worker is disabled in `next dev`): run `npm run test:e2e`.
  * Browser: Playwright's Chromium (`npx playwright install chromium`), or an installed
  * Chrome with PLAYWRIGHT_CHANNEL=chrome.
+ * Against a deployment (no local server): PLAYWRIGHT_BASE_URL=https://… npx playwright test
+ * (tests only create data in fresh, temporary browser profiles).
  */
 const PORT = 3200;
+const deployment = process.env.PLAYWRIGHT_BASE_URL;
 
 export default defineConfig({
   testDir: "e2e",
@@ -16,7 +19,7 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: deployment || `http://localhost:${PORT}`,
     channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -26,10 +29,12 @@ export default defineConfig({
     timezoneId: "Europe/Zurich",
     serviceWorkers: "allow",
   },
-  webServer: {
-    command: `npm run start -- -p ${PORT}`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: false,
-    timeout: 60_000,
-  },
+  webServer: deployment
+    ? undefined
+    : {
+        command: `npm run start -- -p ${PORT}`,
+        url: `http://localhost:${PORT}`,
+        reuseExistingServer: false,
+        timeout: 60_000,
+      },
 });

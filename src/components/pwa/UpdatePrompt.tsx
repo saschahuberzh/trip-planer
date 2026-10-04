@@ -26,7 +26,7 @@ export function UpdatePrompt() {
   return (
     <div
       role="status"
-      className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 px-4 pb-3"
+      className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 px-4 pb-3 lg:bottom-4 lg:left-56"
     >
       <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-slate-900 p-4 text-white shadow-lg">
         <p className="flex-1 text-sm">Update available. Reload to use the new version.</p>

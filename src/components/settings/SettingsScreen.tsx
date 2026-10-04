@@ -21,12 +21,16 @@ const noopSubscribe = () => () => {};
 /** Settings: data (export, import, safety backups), storage durability and app info. */
 export function SettingsScreen() {
   return (
-    <section className="mx-auto max-w-md space-y-6 px-4 py-6">
+    <section className="mx-auto max-w-md space-y-6 px-4 py-6 lg:max-w-6xl lg:px-8 lg:py-10">
       <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-      <DataSection />
-      <SafetyBackupsSection />
-      <StorageSection />
-      <ApplicationSection />
+      <div className="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+        <DataSection />
+        <div className="space-y-6">
+          <SafetyBackupsSection />
+          <StorageSection />
+          <ApplicationSection />
+        </div>
+      </div>
     </section>
   );
 }
