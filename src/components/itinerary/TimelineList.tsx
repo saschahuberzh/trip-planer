@@ -1,20 +1,33 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import type { Activity } from "@/lib/domain/types";
+import type { Activity, Place } from "@/lib/domain/types";
 import { entryRef, isSortedByTime, type TimelineEntry } from "@/lib/services/itineraryOrdering";
 import { getItineraryService } from "@/lib/services/itineraryService";
 import { Button } from "@/components/ui/Button";
-import { ArrowDownIcon, ArrowUpIcon, ClockIcon, MoveIcon, PlusIcon, ReorderIcon, TrainIcon } from "@/components/ui/icons";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ClockIcon,
+  MapPinIcon,
+  MoveIcon,
+  PlusIcon,
+  ReorderIcon,
+  TrainIcon,
+} from "@/components/ui/icons";
+import { PLACE_TYPE_LABELS } from "@/components/places/placeDisplay";
 import { entryTimes, entryTitle } from "./itineraryDisplay";
 
 type TimelineListProps = {
   entries: TimelineEntry[];
+  places: ReadonlyMap<string, Place>;
   /** The day's date when this list is a day (enables "Sort by time"); undefined for Unplanned. */
   sortDate?: { tripDayId: string; date: string };
   emptyState: ReactNode;
   addLabel?: string;
   onAdd: () => void;
+  /** Shows a "Visit a place" action (Day View): an activity linked to a place. */
+  onAddPlace?: () => void;
   onOpenActivity: (activity: Activity) => void;
   onMoveEntry: (entry: TimelineEntry) => void;
 };
@@ -25,10 +38,12 @@ type TimelineListProps = {
  */
 export function TimelineList({
   entries,
+  places,
   sortDate,
   emptyState,
   addLabel = "Add activity",
   onAdd,
+  onAddPlace,
   onOpenActivity,
   onMoveEntry,
 }: TimelineListProps) {
@@ -61,6 +76,7 @@ export function TimelineList({
             <li key={`${entry.kind}:${entry.item.id}`}>
               <EntryRow
                 entry={entry}
+                place={entry.kind === "activity" && entry.item.placeId !== undefined ? places.get(entry.item.placeId) : undefined}
                 onOpen={!editing && entry.kind === "activity" ? () => onOpenActivity(entry.item) : undefined}
                 controls={
                   editing ? (
@@ -125,6 +141,12 @@ export function TimelineList({
               <PlusIcon />
               {addLabel}
             </Button>
+            {onAddPlace && (
+              <Button variant="ghost" onClick={onAddPlace} className="flex-1 px-2 text-teal-700">
+                <MapPinIcon />
+                Visit a place
+              </Button>
+            )}
             {entries.length > 0 && (
               <Button variant="ghost" onClick={() => setReordering(true)} className="flex-1">
                 <ReorderIcon />
@@ -138,7 +160,17 @@ export function TimelineList({
   );
 }
 
-function EntryRow({ entry, onOpen, controls }: { entry: TimelineEntry; onOpen?: () => void; controls: ReactNode }) {
+function EntryRow({
+  entry,
+  place,
+  onOpen,
+  controls,
+}: {
+  entry: TimelineEntry;
+  place?: Place;
+  onOpen?: () => void;
+  controls: ReactNode;
+}) {
   const { start, end } = entryTimes(entry);
   const notes = entry.item.notes;
   const content = (
@@ -158,6 +190,14 @@ function EntryRow({ entry, onOpen, controls }: { entry: TimelineEntry; onOpen?: 
           {entry.kind === "transport" && <TrainIcon className="size-4 shrink-0 text-slate-500" />}
           <span className="truncate">{entryTitle(entry)}</span>
         </span>
+        {place !== undefined && (
+          <span className="mt-0.5 flex items-center gap-1 text-sm text-teal-800">
+            <MapPinIcon className="size-3.5 shrink-0" />
+            <span className="truncate">
+              {place.name === entryTitle(entry) ? PLACE_TYPE_LABELS[place.type] : place.name}
+            </span>
+          </span>
+        )}
         {notes !== undefined && <span className="mt-0.5 line-clamp-2 block text-sm text-slate-500">{notes}</span>}
       </span>
     </>

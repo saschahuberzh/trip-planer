@@ -155,6 +155,14 @@ export function assertValidTripDay(day: TripDay): void {
   c.date(day.date, "date");
   c.optionalText(day.title, "title");
   c.optionalText(day.notes, "notes");
+  if (day.placeIds !== undefined) {
+    const ids: unknown = day.placeIds;
+    c.check(
+      Array.isArray(ids) && ids.length > 0 && ids.every((id) => typeof id === "string" && id.trim() !== ""),
+      "placeIds must be a non-empty list of IDs",
+    );
+    c.check(!Array.isArray(ids) || new Set(ids).size === ids.length, "placeIds must not contain duplicates");
+  }
   c.result("trip day");
 }
 
@@ -170,6 +178,11 @@ export function assertValidPlace(place: Place): void {
   c.optionalText(place.notes, "notes");
   c.boolean(place.favorite, "favorite");
   c.boolean(place.visited, "visited");
+  if (place.externalRef !== undefined) {
+    c.check(typeof place.externalRef === "object" && place.externalRef !== null, "externalRef must be an object");
+    c.text(place.externalRef?.provider, "externalRef.provider");
+    c.text(place.externalRef?.id, "externalRef.id");
+  }
   c.result("place");
 }
 

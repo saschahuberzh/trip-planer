@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Place } from "@/lib/domain/types";
 import type { DayTimeline } from "@/lib/services/itineraryService";
 import { InboxIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/Sheet";
@@ -12,15 +13,16 @@ type MoveSheetProps = {
   description: string;
   /** Destination days (within the trip dates). */
   days: DayTimeline[];
-  /** The current bucket, which is not offered as a destination. `undefined` = Unplanned. */
-  currentTripDayId: string | undefined;
+  places: ReadonlyMap<string, Place>;
+  /** The current bucket, which is not offered as a destination. `undefined` = Unplanned, `null` = none. */
+  currentTripDayId: string | undefined | null;
   /** Moves to the chosen bucket (`undefined` = Unplanned). */
   onMove: (tripDayId: string | undefined) => Promise<void>;
   onClose: () => void;
 };
 
 /** One-tap destination picker: any day or Unplanned. Entries are added at the end. */
-export function MoveSheet({ open, title, description, days, currentTripDayId, onMove, onClose }: MoveSheetProps) {
+export function MoveSheet({ open, title, description, days, places, currentTripDayId, onMove, onClose }: MoveSheetProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +61,7 @@ export function MoveSheet({ open, title, description, days, currentTripDayId, on
           return (
             <li key={timeline.day.id}>
               <button type="button" disabled={busy || current} onClick={() => void move(timeline.day.id)} className={option}>
-                <span className="flex-1 truncate font-medium text-slate-900">{dayOptionLabel(timeline)}</span>
+                <span className="flex-1 truncate font-medium text-slate-900">{dayOptionLabel(timeline, places)}</span>
                 <span className="shrink-0 text-sm text-slate-500">
                   {current ? "Current" : timeline.entries.length === 0 ? "Empty" : `${timeline.entries.length}`}
                 </span>

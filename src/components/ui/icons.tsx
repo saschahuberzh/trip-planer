@@ -153,3 +153,37 @@ export const TrainIcon = (props: IconProps) => (
     <path d="M5 11h14M9 21l-2-4M15 21l2-4M9 14h.01M15 14h.01" />
   </Icon>
 );
+
+export const StarIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" />
+  </Icon>
+);
+
+export const CheckCircleIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="m8 12 3 3 5-6" />
+  </Icon>
+);
+
+export const MapPinIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </Icon>
+);
+
+export const SearchIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.3-4.3" />
+  </Icon>
+);
+
+export const LinkIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </Icon>
+);

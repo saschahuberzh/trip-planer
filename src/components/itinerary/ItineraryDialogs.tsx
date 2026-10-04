@@ -3,6 +3,8 @@
 import type { Activity, TripDay } from "@/lib/domain/types";
 import { entryRef, type TimelineEntry } from "@/lib/services/itineraryOrdering";
 import { getItineraryService, type DayTimeline, type Itinerary } from "@/lib/services/itineraryService";
+import { getPlaceService } from "@/lib/services/placeService";
+import { PlacePickerSheet } from "@/components/places/PlacePickerSheet";
 import { TripFormSheet } from "@/components/trips/TripFormSheet";
 import { ActivitySheet } from "./ActivitySheet";
 import { DayDetailsSheet, DeleteOutsideDaySheet } from "./DaySheets";
@@ -12,6 +14,7 @@ import { MoveSheet } from "./MoveSheet";
 export type ItineraryDialog =
   | { type: "create-activity"; tripDayId: string | undefined }
   | { type: "edit-activity"; activity: Activity }
+  | { type: "add-place"; tripDayId: string }
   | { type: "move-entry"; entry: TimelineEntry }
   | { type: "edit-day"; day: TripDay }
   | { type: "move-day-entries"; timeline: DayTimeline }
@@ -44,7 +47,24 @@ export function ItineraryDialogs({ itinerary, dialog, onClose, onDayDeleted }: I
 
   return (
     <>
-      <ActivitySheet tripId={trip.id} target={activityTarget} days={activityDays} onClose={onClose} />
+      <ActivitySheet
+        tripId={trip.id}
+        target={activityTarget}
+        days={activityDays}
+        places={itinerary.places}
+        onClose={onClose}
+      />
+
+      <PlacePickerSheet
+        open={dialog?.type === "add-place"}
+        title="Visit a place"
+        tripId={trip.id}
+        places={[...itinerary.places.values()]}
+        onPick={async (place) => {
+          if (dialog?.type === "add-place") await getPlaceService().addPlaceToDay(place.id, dialog.tripDayId);
+        }}
+        onClose={onClose}
+      />
 
       <MoveSheet
         open={dialog?.type === "move-entry"}
@@ -55,6 +75,7 @@ export function ItineraryDialogs({ itinerary, dialog, onClose, onDayDeleted }: I
             : ""
         }
         days={days}
+        places={itinerary.places}
         currentTripDayId={dialog?.type === "move-entry" ? dialog.entry.item.tripDayId : undefined}
         onMove={async (tripDayId) => {
           if (dialog?.type === "move-entry") await getItineraryService().moveEntry(entryRef(dialog.entry), tripDayId);
@@ -71,6 +92,7 @@ export function ItineraryDialogs({ itinerary, dialog, onClose, onDayDeleted }: I
             : ""
         }
         days={days}
+        places={itinerary.places}
         currentTripDayId={dialog?.type === "move-day-entries" ? dialog.timeline.day.id : undefined}
         onMove={async (tripDayId) => {
           if (dialog?.type === "move-day-entries") {

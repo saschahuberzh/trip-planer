@@ -172,6 +172,9 @@ export function DeleteOutsideDaySheet({
             </div>
           )}
           {timeline.day.notes !== undefined && <p className="text-sm">The day&apos;s notes are deleted too.</p>}
+          {timeline.day.placeIds !== undefined && (
+            <p className="text-sm">Its places of the day stay in your places list.</p>
+          )}
           <p className="text-sm text-slate-500">
             To keep these plans, move them to another day or to Unplanned instead. This can&apos;t be undone.
           </p>

@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import type { Activity } from "@/lib/domain/types";
+import type { Activity, Place } from "@/lib/domain/types";
 import { useItinerary } from "@/lib/hooks/useItinerary";
 import { appRoutePath } from "@/lib/routing/routes";
 import type { TimelineEntry } from "@/lib/services/itineraryOrdering";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { AlertIcon, ChevronRightIcon, InboxIcon } from "@/components/ui/icons";
+import { AlertIcon, ChevronRightIcon, InboxIcon, MapPinIcon } from "@/components/ui/icons";
 import { ItineraryDialogs, type ItineraryDialog } from "./ItineraryDialogs";
-import { dayLabel, formatDayDate } from "./itineraryDisplay";
+import { dayLabel, dayPlacesLabel, formatDayDate } from "./itineraryDisplay";
 import { TimelineList } from "./TimelineList";
 
 /** The trip's itinerary: outside-date days, all days chronologically, and Unplanned. */
@@ -64,6 +64,7 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
               key={timeline.day.id}
               tripId={trip.id}
               timeline={timeline}
+              places={itinerary.places}
               {...timelineHandlers(timeline.day.id)}
               outsideActions={
                 <div className="flex gap-2 border-t border-amber-100 p-2">
@@ -92,7 +93,13 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
 
       <section aria-label="Days" className="space-y-4">
         {days.map((timeline) => (
-          <DayCard key={timeline.day.id} tripId={trip.id} timeline={timeline} {...timelineHandlers(timeline.day.id)} />
+          <DayCard
+            key={timeline.day.id}
+            tripId={trip.id}
+            timeline={timeline}
+            places={itinerary.places}
+            {...timelineHandlers(timeline.day.id)}
+          />
         ))}
       </section>
 
@@ -113,6 +120,7 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
         </header>
         <TimelineList
           entries={unplanned}
+          places={itinerary.places}
           emptyState="Ideas without a day go here. Assign them to a day whenever you're ready."
           addLabel="Add idea"
           {...timelineHandlers(undefined)}
@@ -127,6 +135,7 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
 type DayCardProps = {
   tripId: string;
   timeline: DayTimeline;
+  places: ReadonlyMap<string, Place>;
   onAdd: () => void;
   onOpenActivity: (activity: Activity) => void;
   onMoveEntry: (entry: TimelineEntry) => void;
@@ -135,6 +144,7 @@ type DayCardProps = {
 
 function DayCard({ tripId, timeline, outsideActions, ...handlers }: DayCardProps) {
   const { day } = timeline;
+  const placesLabel = dayPlacesLabel(day, handlers.places);
   return (
     <article
       className={`overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ${timeline.outside ? "ring-amber-300" : "ring-slate-200"}`}
@@ -149,8 +159,16 @@ function DayCard({ tripId, timeline, outsideActions, ...handlers }: DayCardProps
           </p>
           <h3 className="truncate text-lg font-semibold text-slate-900">
             {formatDayDate(day.date)}
-            {day.title !== undefined && <span className="font-normal text-slate-600"> · {day.title}</span>}
+            {(day.title ?? placesLabel) !== undefined && (
+              <span className="font-normal text-slate-600"> · {day.title ?? placesLabel}</span>
+            )}
           </h3>
+          {day.title !== undefined && placesLabel !== undefined && (
+            <p className="mt-0.5 flex items-center gap-1 text-sm text-teal-800">
+              <MapPinIcon className="size-3.5 shrink-0" />
+              <span className="truncate">{placesLabel}</span>
+            </p>
+          )}
           {day.notes !== undefined && <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">{day.notes}</p>}
         </div>
         <ChevronRightIcon className="size-5 shrink-0 text-slate-400" />

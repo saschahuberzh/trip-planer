@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/ui/PlaceholderPage";
+import { PlacesScreen } from "@/components/places/PlacesScreen";
 
 export const metadata: Metadata = { title: "Places" };
 
 export default function Page() {
-  return (
-    <PlaceholderPage
-      title="Places"
-      description="Saved places will appear here."
-    />
-  );
+  return <PlacesScreen />;
 }

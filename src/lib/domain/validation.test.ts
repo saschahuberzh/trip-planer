@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { currencyMinorUnits, isCurrencyCode } from "./currency";
-import type { Accommodation, Expense, Transport, Trip } from "./types";
+import type { Accommodation, Expense, Transport, Trip, TripDay } from "./types";
 import {
   ValidationError,
   assertValidAccommodation,
   assertValidExpense,
   assertValidTransport,
   assertValidTrip,
+  assertValidTripDay,
 } from "./validation";
 
 const meta = { createdAt: "2026-10-03T19:00:00.000Z", updatedAt: "2026-10-03T19:00:00.000Z" };
@@ -166,5 +167,19 @@ describe("assertValidExpense", () => {
     expect(issuesOf(() => assertValidExpense({ ...expense, originalAmount: 0 }, "CHF"))).toEqual([
       "originalAmount must be a number > 0",
     ]);
+  });
+});
+
+describe("assertValidTripDay", () => {
+  const day: TripDay = { id: "d", tripId: "t", date: "2026-06-12", ...meta };
+
+  it("accepts ordered places of the day", () => {
+    expect(() => assertValidTripDay({ ...day, placeIds: ["p1", "p2"] })).not.toThrow();
+  });
+
+  it("rejects empty, blank or duplicate place IDs", () => {
+    expect(() => assertValidTripDay({ ...day, placeIds: [] })).toThrow(ValidationError);
+    expect(() => assertValidTripDay({ ...day, placeIds: [" "] })).toThrow(ValidationError);
+    expect(() => assertValidTripDay({ ...day, placeIds: ["p1", "p1"] })).toThrow(ValidationError);
   });
 });

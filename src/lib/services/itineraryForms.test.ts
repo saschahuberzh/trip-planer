@@ -25,7 +25,7 @@ describe("validateActivityForm", () => {
     const result = validateActivityForm({ ...emptyActivityFormValues("day-1"), title: "  Old town  " });
     expect(result).toEqual({
       ok: true,
-      input: { title: "Old town", startTime: undefined, endTime: undefined, notes: undefined },
+      input: { title: "Old town", startTime: undefined, endTime: undefined, notes: undefined, placeId: undefined },
       tripDayId: "day-1",
     });
   });
@@ -42,15 +42,16 @@ describe("validateActivityForm", () => {
       endTime: "11:30",
       notes: " Closed Mondays ",
       tripDayId: UNPLANNED_VALUE,
+      placeId: "place-1",
     });
-    expect(result).toMatchObject({ ok: true, input: { startTime: "09:00", endTime: "11:30", notes: "Closed Mondays" } });
+    expect(result).toMatchObject({ ok: true, input: { startTime: "09:00", endTime: "11:30", notes: "Closed Mondays", placeId: "place-1" } });
   });
 
   it("requires a title and a start time when an end time is set", () => {
     const result = validateActivityForm({ ...emptyActivityFormValues("d"), endTime: "10:00" });
     expect(result).toEqual({
       ok: false,
-      errors: { title: "Give the activity a title.", endTime: "Add a start time as well." },
+      errors: { title: "Give the activity a title or choose a place.", endTime: "Add a start time as well." },
     });
   });
 
@@ -69,7 +70,14 @@ describe("validateActivityForm", () => {
       sortOrder: 0,
       ...meta,
     });
-    expect(values).toEqual({ title: "Dinner", startTime: "19:00", endTime: "", notes: "", tripDayId: UNPLANNED_VALUE });
+    expect(values).toEqual({
+      title: "Dinner",
+      startTime: "19:00",
+      endTime: "",
+      notes: "",
+      tripDayId: UNPLANNED_VALUE,
+      placeId: undefined,
+    });
     expect(validateActivityForm(values)).toMatchObject({ ok: true, input: { title: "Dinner", startTime: "19:00" } });
   });
 });

@@ -30,8 +30,7 @@ Use Chrome (DevTools → Application) or Safari.
    - "Plan" renders and the header shows "Trip not found" (no trip has that ID).
    - The URL is unchanged.
 6. Repeat for `/trips/<uuid>`, `/map`, `/places`, `/budget`, `/accommodation`,
-   `/bookings`, `/plan/<dayId>` and `/places/<placeId>` (the day page shows "Trip not found",
-   the place page shows its ID).
+   `/bookings`, `/plan/<dayId>` and `/places/<placeId>` (day and place pages show "Trip not found").
 7. While offline, tap other section tabs and the bottom navigation → correct
    section renders with the same trip ID.
 7a. Trips (Phase 3), still offline:
@@ -50,6 +49,14 @@ Use Chrome (DevTools → Application) or Safari.
    - Open a day → date, title, notes and timeline; edit title/notes.
    - Shorten the trip so a day with activities falls outside → "Outside trip dates"
      section with Move all items / Change trip dates / Delete day.
+7c. Places (Phase 5), still offline:
+   - Places → Add: the online search says it needs an internet connection; enter a
+     place manually (name only), save → it appears in the list as "No location yet".
+   - Edit it: paste `41.311, 69.240` (or a Google Maps link with `@lat,lng`) → coordinates
+     are filled; save. Toggle favorite/visited; filters and search work.
+   - In a day: "Visit a place" → pick the place → an activity named after it is added.
+     In an activity's form: choose/remove a place. Place detail lists where it's used.
+   - Delete the place → its activities stay with their title.
 8. Open an unknown path (e.g. `/nope`) → "You are offline" page.
 9. Update flow:
    - Go back online, change some visible text, `npm run build && npm run start`.

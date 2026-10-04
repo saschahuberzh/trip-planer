@@ -189,7 +189,7 @@ PLACE-007
 Filters (including planned/unplanned as defined in DATA_MODEL.md).
 
 PLACE-008
-"Add Place" from Day View (select/create place, create linked activity).
+"Visit a place" (Add Place) from Day View (select/create place, create linked activity).
 
 PLACE-009
 Place search behind the `PlaceSearchProvider` abstraction (TECH_STACK.md "Place Search");
@@ -204,6 +204,10 @@ and manual entry (works offline); search results usable as a starting point.
 
 PLACE-012
 Place Detail "assign to day" and list of activities using the place.
+
+PLACE-013
+Places of the day (`TripDay.placeIds`): add/reorder/remove in the Day View, shown in the Plan;
+counts as user data; place delete removes it from days; planned status includes days.
 
 Acceptance criteria:
 
@@ -228,13 +232,17 @@ MAP-004
 Fit map to trip.
 
 MAP-005
-Day filtering.
+Day view: one day's places of the day and activity places, numbered and connected (SCREENS.md "Map").
 
 MAP-006
 Place category filtering.
 
 MAP-007
-Route/order visualization (numbering and straight-line connections as defined in SCREENS.md "Map").
+Route view: places of the day of all days chronologically, merged consecutive stops,
+numbered and connected (SCREENS.md "Map").
+
+MAP-009
+All places view: places coloured/labelled by day, unplanned neutral, filter by day.
 
 MAP-008
 Map picker: set or correct a place's position by tapping/dragging a pin, available from

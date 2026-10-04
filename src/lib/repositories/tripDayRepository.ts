@@ -3,7 +3,7 @@ import type { TravelDatabase } from "@/lib/db/database";
 import type { TripDay } from "@/lib/domain/types";
 import { assertValidTripDay } from "@/lib/domain/validation";
 import { ConflictError, EntityNotFoundError } from "./errors";
-import { deleteTimelineEntries, requireTrip } from "./references";
+import { deleteTimelineEntries, requireInTrip, requireTrip } from "./references";
 import { tripScopedCrud, writeTransaction, type NewEntity } from "./shared";
 
 export type NewTripDay = NewEntity<TripDay>;
@@ -25,6 +25,7 @@ export function createTripDayRepository(db: TravelDatabase) {
       if (sameDate && sameDate.id !== day.id) {
         throw new ConflictError(`Trip already has a day for ${day.date}`);
       }
+      for (const placeId of day.placeIds ?? []) await requireInTrip(db.places, placeId, day.tripId, "Place");
     },
   });
 
@@ -38,6 +39,7 @@ export function createTripDayRepository(db: TravelDatabase) {
     const hasUserData =
       day.title !== undefined ||
       day.notes !== undefined ||
+      day.placeIds !== undefined ||
       activityIds.length > 0 ||
       transportIds.length > 0;
     return { activityIds, transportIds, hasUserData };
@@ -51,7 +53,7 @@ export function createTripDayRepository(db: TravelDatabase) {
       return db.tripDays.where("[tripId+date]").between([tripId, Dexie.minKey], [tripId, Dexie.maxKey]).toArray();
     },
 
-    /** A day contains user data if it has a title, notes, or any Activity or Transport. */
+    /** A day contains user data if it has a title, notes, places of the day, or any Activity or Transport. */
     async hasUserData(id: string): Promise<boolean> {
       return (await db.transaction("r", [db.tripDays, db.activities, db.transports], () => inspect(id)))
         .hasUserData;

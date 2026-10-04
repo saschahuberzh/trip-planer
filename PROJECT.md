@@ -116,6 +116,9 @@ A place is "planned" when it is referenced by an activity assigned to a day; oth
 Places are collected independently of the itinerary (a list of places the user wants to visit)
 and can be linked to activities. One place can be used by several activities.
 
+Each day can list its "places of the day" (where the traveller is, e.g. "Tashkent → Samarkand"
+on a travel day). They form the trip route shown on the map.
+
 Places can be found with an online place search (name → address and coordinates), similar to
 searching in Google Maps. The search provider is replaceable. Search results are copied into
 the app's own Place records, so saved places never depend on the search provider and remain
@@ -209,7 +212,7 @@ Duration: 1h 45min
 
 The day view should optionally include a map containing that day's places.
 
-"Add Place" in the day view means: select an existing place or create a new one, then create an activity linked to that place and day.
+"Visit a place" (Add Place) in the day view means: select an existing place or create a new one, then create an activity linked to that place and day.
 
 ---
 

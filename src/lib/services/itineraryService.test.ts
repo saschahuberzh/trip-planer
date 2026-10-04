@@ -257,6 +257,34 @@ describe("activities", () => {
   });
 });
 
+describe("activity places", () => {
+  const place = { name: "Registan", type: "attraction" as const, favorite: false, visited: false };
+
+  it("links an existing activity to a place and removes the link again", async () => {
+    const { trip, days } = await setup();
+    const registan = await repos.places.create({ ...place, tripId: trip.id });
+    const activity = await add(trip, days[0].id, "Light show", "20:00");
+    await itinerary.updateActivity(activity.id, { title: "Light show", startTime: "20:00", placeId: registan.id }, days[0].id);
+    expect(await repos.activities.get(activity.id)).toMatchObject({ placeId: registan.id, title: "Light show", sortOrder: 0 });
+    await itinerary.updateActivity(activity.id, { title: "Light show", startTime: "20:00" }, days[0].id);
+    expect(await repos.activities.get(activity.id)).not.toHaveProperty("placeId");
+    expect(await repos.places.get(registan.id)).toBeDefined();
+  });
+
+  it("rejects places of another trip", async () => {
+    const { trip, days } = await setup();
+    const other = await trips.createTrip({ ...tripInput, name: "Other" });
+    const foreign = await repos.places.create({ ...place, tripId: other.id });
+    await expect(itinerary.createActivity(trip.id, days[0].id, { title: "X", placeId: foreign.id })).rejects.toThrow();
+  });
+
+  it("includes the trip's places in the itinerary", async () => {
+    const { trip } = await setup();
+    const registan = await repos.places.create({ ...place, tripId: trip.id });
+    expect((await load(trip.id)).places.get(registan.id)?.name).toBe("Registan");
+  });
+});
+
 describe("reordering", () => {
   it("shifts entries up and down and rewrites consecutive sortOrders", async () => {
     const { trip, days } = await setup();
@@ -455,6 +483,56 @@ describe("days outside the trip dates", () => {
     await itinerary.moveEntry({ kind: "activity", id: a.id }, undefined);
     await itinerary.updateDayDetails(days[0].id, {});
     expect(await repos.tripDays.get(days[0].id)).toMatchObject({ date: "2026-06-12" });
+  });
+});
+
+describe("places of the day", () => {
+  const place = (name: string) => ({ name, type: "city" as const, favorite: false, visited: false });
+
+  it("stores an ordered list without duplicates and clears it when empty", async () => {
+    const { trip, days } = await setup();
+    const tashkent = await repos.places.create({ ...place("Tashkent"), tripId: trip.id });
+    const samarkand = await repos.places.create({ ...place("Samarkand"), tripId: trip.id });
+    await itinerary.setDayPlaces(days[1].id, [tashkent.id, samarkand.id, tashkent.id]);
+    expect((await repos.tripDays.get(days[1].id))?.placeIds).toEqual([tashkent.id, samarkand.id]);
+    await itinerary.setDayPlaces(days[1].id, []);
+    expect(await repos.tripDays.get(days[1].id)).not.toHaveProperty("placeIds");
+  });
+
+  it("rejects places of another trip", async () => {
+    const { days } = await setup();
+    const other = await trips.createTrip({ ...tripInput, name: "Other" });
+    const foreign = await repos.places.create({ ...place("Almaty"), tripId: other.id });
+    await expect(itinerary.setDayPlaces(days[0].id, [foreign.id])).rejects.toThrow();
+    expect(await repos.tripDays.get(days[0].id)).not.toHaveProperty("placeIds");
+  });
+
+  it("keeps a day with only places of the day when the trip dates change", async () => {
+    const { trip, days } = await setup();
+    const bukhara = await repos.places.create({ ...place("Bukhara"), tripId: trip.id });
+    await itinerary.setDayPlaces(days[2].id, [bukhara.id]);
+    await trips.updateTrip(trip.id, { ...tripInput, endDate: "2026-06-13" }, { type: "keep" });
+    expect((await load(trip.id)).outsideDays.map((day) => day.day.id)).toEqual([days[2].id]);
+  });
+
+  it("removes an outside day once its last place of the day is removed", async () => {
+    const { trip, days } = await setup();
+    const bukhara = await repos.places.create({ ...place("Bukhara"), tripId: trip.id });
+    await itinerary.setDayPlaces(days[2].id, [bukhara.id]);
+    await trips.updateTrip(trip.id, { ...tripInput, endDate: "2026-06-13" }, { type: "keep" });
+    await itinerary.setDayPlaces(days[2].id, []);
+    expect(await repos.tripDays.get(days[2].id)).toBeUndefined();
+  });
+
+  it("removes a deleted place from days and keeps the other places", async () => {
+    const { trip, days } = await setup();
+    const tashkent = await repos.places.create({ ...place("Tashkent"), tripId: trip.id });
+    const samarkand = await repos.places.create({ ...place("Samarkand"), tripId: trip.id });
+    await itinerary.setDayPlaces(days[0].id, [tashkent.id]);
+    await itinerary.setDayPlaces(days[1].id, [tashkent.id, samarkand.id]);
+    await repos.places.delete(tashkent.id);
+    expect(await repos.tripDays.get(days[0].id)).not.toHaveProperty("placeIds");
+    expect((await repos.tripDays.get(days[1].id))?.placeIds).toEqual([samarkand.id]);
   });
 });
 

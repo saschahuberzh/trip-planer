@@ -93,6 +93,7 @@ TripDay {
   date: string                 // YYYY-MM-DD, unique per trip
   title?: string
   notes?: string
+  placeIds?: string[]          // "places of the day", ordered; undefined = none (never stored empty)
   createdAt: string
   updatedAt: string
 }
@@ -105,12 +106,21 @@ Rules:
 - Exactly one TripDay per `(tripId, date)`.
 - Creating a trip creates one TripDay per date in the range.
 - Changing trip dates creates missing TripDays for the new range.
-- A TripDay "contains user data" if it has a title, notes, or any Activity or Transport referencing it.
+- A TripDay "contains user data" if it has a title, notes, places of the day, or any Activity or Transport referencing it.
 - After a date change, TripDays outside the new range:
   - without user data are deleted automatically
   - with user data are preserved and shown as "outside trip dates" for manual resolution
     (move items to another day / Unplanned, adjust trip dates, or explicitly delete with confirmation)
 - "Outside trip dates" is derived (`date < startDate || date > endDate`), not stored.
+
+Places of the day (`placeIds`):
+
+- Where the traveller is that day: usually one place (e.g. the city), two on a travel day
+  (`Tashkent → Samarkand`), more for a round trip (`Samarkand → Shahrisabz → Samarkand`).
+- Ordered; a place appears at most once per day; all places belong to the same trip. No fixed maximum.
+- Independent of activities: the day says *where*, activities say *what*.
+- Used for the trip route on the map (see SCREENS.md "Map") and shown with the day
+  (as the day heading when the day has no title).
 
 ---
 
@@ -161,8 +171,8 @@ Provider independence:
 - `latitude`/`longitude` are WGS 84 decimal degrees and are set together or not at all.
 - Places without coordinates are valid; they are listed normally and not shown on the map.
 
-A place is **planned** when at least one Activity with a `tripDayId` references it.
-Otherwise it is **unplanned**. This is derived, not stored.
+A place is **planned** when at least one Activity with a `tripDayId` references it,
+or at least one TripDay lists it in `placeIds`. Otherwise it is **unplanned**. This is derived, not stored.
 
 ---
 
@@ -225,7 +235,7 @@ An Activity may reference one Place (`placeId`); a Place may be referenced by an
   The title is stored on the Activity and is not updated when the place is renamed.
 - Deleting an Activity never deletes its Place.
 
-"Add Place" from a Day View is a shortcut: it opens place selection/creation directly and creates
+"Visit a place" (formerly "Add Place") in the Day View is a shortcut: it opens place selection/creation directly and creates
 an Activity with `placeId` and `tripDayId` set (title = place name), appended to the day.
 "Assign to day" on a Place does the same for a chosen day.
 
@@ -568,7 +578,7 @@ A backup is valid only if all of the following hold. Validation must complete be
 - every record matches its schema (types, enums, date formats, IANA timezones, ISO 4217 codes)
 - expense conversion fields are consistent (both set or both absent; rate 1 and equal amounts when `originalCurrency` equals the trip's `baseCurrency`); stored `amountInBaseCurrency` values are restored as-is, never recalculated
 - IDs are unique per table
-- every reference (`tripId`, `tripDayId`, `placeId`, `linkedEntity`, `coverImageId`, …) resolves within the backup
+- every reference (`tripId`, `tripDayId`, `placeId`, TripDay `placeIds`, `linkedEntity`, `coverImageId`, …) resolves within the backup
 - TripDay `(tripId, date)` pairs are unique
 
 ## Restore
@@ -601,9 +611,11 @@ Trip
 
 TripDay
 ├── Activity[]
-└── Transport[]
+├── Transport[]
+└── Place[] (places of the day, by ID)
 
 Place
+├── TripDay places of the day
 ├── Activity[]
 ├── Transport origin/destination
 └── Accommodation
@@ -623,7 +635,7 @@ in the repository/service layer.
 |---|---|
 | Trip | Deletes all owned entities and its ImageAsset. Requires explicit confirmation showing what will be deleted. |
 | TripDay | Not deletable while it contains user data unless the user explicitly chooses to delete its items (confirmation listing them) or moves them first. Empty days are removed automatically only when outside the trip range. |
-| Place | Requires confirmation if referenced. References are unlinked: Activity keeps its title; Transport gets `originText`/`destinationText` set to the place name; Accommodation receives the place's address/coordinates in its own fields. |
+| Place | Requires confirmation if referenced. References are unlinked: removed from TripDay `placeIds`; Activity keeps its title; Transport gets `originText`/`destinationText` set to the place name; Accommodation receives the place's address/coordinates in its own fields. |
 | Activity | Bookings and Expenses linking to it are unlinked (`linkedEntity` removed), not deleted. |
 | Transport | Bookings and Expenses linking to it are unlinked, not deleted. |
 | Accommodation | Bookings and Expenses linking to it are unlinked, not deleted. |

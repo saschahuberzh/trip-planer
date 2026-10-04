@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { CloseIcon } from "./icons";
 
 type SheetProps = {
@@ -14,26 +15,38 @@ type SheetProps = {
   dismissible?: boolean;
 };
 
+const noopSubscribe = () => () => {};
+
 /**
  * Modal bottom sheet on phones, centered dialog on larger screens. Built on <dialog>
  * for focus handling and Escape support. Content is only mounted while open, so
  * forms start fresh each time.
+ *
+ * Rendered into <body> so that a sheet opened from inside another sheet's form never
+ * puts a <form> inside a <form> in the DOM (invalid HTML: the inner form's submit is
+ * then not handled by React and the browser submits it natively).
  */
 export function Sheet({ open, onClose, title, children, footer, dismissible = true }: SheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
-  }, [open]);
+  }, [open, mounted]);
 
   const requestClose = () => {
     if (dismissible) onClose();
   };
 
-  return (
+  if (!mounted) return null;
+  return createPortal(
     <dialog
       ref={ref}
       aria-label={title}
@@ -48,6 +61,10 @@ export function Sheet({ open, onClose, title, children, footer, dismissible = tr
         // A click on the dialog element itself is a click on the backdrop.
         if (event.target === ref.current) requestClose();
       }}
+      // A sheet opened from within another sheet's form (e.g. "new place" from the
+      // activity form) must not submit that outer form: React events bubble along
+      // the component tree.
+      onSubmit={(event) => event.stopPropagation()}
       className="inset-x-0 mx-auto mt-auto mb-0 max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-900/40 open:flex sm:mb-auto sm:rounded-3xl"
     >
       {open && (
@@ -72,6 +89,7 @@ export function Sheet({ open, onClose, title, children, footer, dismissible = tr
           )}
         </>
       )}
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }

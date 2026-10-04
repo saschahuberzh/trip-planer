@@ -127,7 +127,8 @@ Samarkand
 
 ...
 
-Each day shows one timeline of activities and transport in user-defined order.
+Each day shows its places of the day (e.g. "Tashkent → Samarkand"; used as heading when the day
+has no title) and one timeline of activities and transport in user-defined order.
 Accommodation for that night is shown on the day but is not part of the reorderable timeline.
 
 Users can:
@@ -155,6 +156,7 @@ Displays:
 
 - date
 - optional title
+- places of the day: add (select existing / create new place), reorder, remove
 - map preview
 - timeline of activities and transport (user-defined order)
 - accommodation for the night
@@ -163,13 +165,14 @@ Displays:
 Actions:
 
 - add activity
-- add place
+- visit a place
 - add transport
 - reorder
 - edit
 
-"Add place": select an existing place or create a new one; this creates an activity
-linked to that place and this day.
+"Visit a place": select an existing place or create a new one; this creates an activity
+linked to that place and this day. (Distinct from "places of the day", which say where the
+traveller is.)
 
 Activity form (create/edit):
 
@@ -184,9 +187,19 @@ Activity form (create/edit):
 
 Full-screen or near-full-screen map.
 
+Views:
+
+- **Route**: the places of the day of all days in chronological order, numbered and connected
+  with straight lines. Consecutive days at the same place are merged into one stop
+  (e.g. "Day 1–2 · Tashkent"). Days without places of the day are skipped.
+- **Day**: one selected day — its places of the day and the places of its activities,
+  numbered in order (places of the day first, then timeline order), connected with lines.
+- **All places**: every place with coordinates, coloured/labelled by the day(s) it is used on
+  (places of the day or activities); unplanned places in a neutral style. Filter by day.
+
 Controls:
 
-- entire trip / selected day
+- view switch (Route / Day / All places), day selector
 - place category filter
 - fit entire trip
 
@@ -203,9 +216,8 @@ Selecting a marker opens a place detail panel.
 Places without coordinates are listed as "not on map" with an action to set the position
 by tapping the map (same map picker as in Create / Edit Place).
 
-Route order: in the day view, stops are numbered in timeline order; for the entire trip,
-stops follow days chronologically, then timeline order. Consecutive stops are connected
-with straight lines (no road/rail routing).
+Lines are straight (no road/rail routing). Places without coordinates are skipped in
+numbering and lines and listed as "not on map".
 
 ---
 
@@ -241,7 +253,7 @@ Empty state explains that places are the list of places to visit and can later b
 
 # 7a. Create / Edit Place
 
-Sheet used from Places, Place Detail, the activity form and "Add place" in the Day View.
+Sheet used from Places, Place Detail, the activity form, "Visit a place" and places of the day in the Day View.
 
 Search (online):
 
@@ -284,6 +296,7 @@ Actions:
 
 - edit
 - assign to day (creates an activity linked to this place on the chosen day)
+- shows the days on which it is a place of the day
 - open map
 - delete
 

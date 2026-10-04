@@ -20,6 +20,8 @@ export interface ActivityFormValues {
   notes: string;
   /** TripDay ID, or UNPLANNED_VALUE. */
   tripDayId: string;
+  /** Linked place ID, or undefined for none. */
+  placeId: string | undefined;
 }
 
 export type ActivityFormErrors = Partial<Record<keyof ActivityFormValues, string>>;
@@ -29,7 +31,7 @@ export type ActivityFormResult =
   | { ok: false; errors: ActivityFormErrors };
 
 export function emptyActivityFormValues(tripDayId: string | undefined): ActivityFormValues {
-  return { title: "", startTime: "", endTime: "", notes: "", tripDayId: tripDayId ?? UNPLANNED_VALUE };
+  return { title: "", startTime: "", endTime: "", notes: "", tripDayId: tripDayId ?? UNPLANNED_VALUE, placeId: undefined };
 }
 
 export function activityToFormValues(activity: Activity): ActivityFormValues {
@@ -39,6 +41,7 @@ export function activityToFormValues(activity: Activity): ActivityFormValues {
     endTime: activity.endTime ?? "",
     notes: activity.notes ?? "",
     tripDayId: activity.tripDayId ?? UNPLANNED_VALUE,
+    placeId: activity.placeId,
   };
 }
 
@@ -63,7 +66,7 @@ export function validateActivityForm(values: ActivityFormValues): ActivityFormRe
   const errors: ActivityFormErrors = {};
 
   const title = values.title.trim();
-  if (title === "") errors.title = "Give the activity a title.";
+  if (title === "") errors.title = "Give the activity a title or choose a place.";
   else if (title.length > MAX_ACTIVITY_TITLE_LENGTH) {
     errors.title = `Use at most ${MAX_ACTIVITY_TITLE_LENGTH} characters.`;
   }
@@ -82,6 +85,7 @@ export function validateActivityForm(values: ActivityFormValues): ActivityFormRe
       startTime: startTime === "" ? undefined : startTime,
       endTime: endTime === "" ? undefined : endTime,
       notes: optionalText(values.notes),
+      placeId: values.placeId,
     },
     tripDayId: values.tripDayId === UNPLANNED_VALUE ? undefined : values.tripDayId,
   };

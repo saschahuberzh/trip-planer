@@ -42,6 +42,8 @@ export interface TripDay extends EntityMetadata {
   date: string;
   title?: string;
   notes?: string;
+  /** Places of the day, ordered (e.g. Tashkent → Samarkand). Never stored empty. */
+  placeIds?: string[];
 }
 
 export const PLACE_TYPES = [
@@ -67,6 +69,15 @@ export interface Place extends EntityMetadata {
   notes?: string;
   favorite: boolean;
   visited: boolean;
+  /** Where the place was found (informational only; never needed to use the place). */
+  externalRef?: PlaceExternalRef;
+}
+
+export interface PlaceExternalRef {
+  /** Search provider ID, e.g. "photon". */
+  provider: string;
+  /** The provider's ID for the place, e.g. "N123456". */
+  id: string;
 }
 
 /** Fields shared by all entries of the itinerary timeline. */

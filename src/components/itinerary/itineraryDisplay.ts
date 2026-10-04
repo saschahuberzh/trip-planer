@@ -1,5 +1,5 @@
 import { formatCalendarDate } from "@/lib/domain/dateTime";
-import type { TransportType } from "@/lib/domain/types";
+import type { Place, TransportType, TripDay } from "@/lib/domain/types";
 import type { TimelineEntry } from "@/lib/services/itineraryOrdering";
 import type { DayTimeline } from "@/lib/services/itineraryService";
 
@@ -29,13 +29,25 @@ export function dayLabel(timeline: Pick<DayTimeline, "dayNumber">): string {
   return timeline.dayNumber === null ? "Outside trip dates" : `Day ${timeline.dayNumber}`;
 }
 
+/** The day's places of the day, e.g. "Tashkent → Samarkand"; undefined when none. */
+export function dayPlacesLabel(day: TripDay, places: ReadonlyMap<string, Place>): string | undefined {
+  const names = (day.placeIds ?? []).map((id) => places.get(id)?.name).filter((name) => name !== undefined);
+  return names.length > 0 ? names.join(" → ") : undefined;
+}
+
+/** The day's title, else its places of the day. */
+export function dayHeadingSuffix(day: TripDay, places: ReadonlyMap<string, Place>): string | undefined {
+  return day.title ?? dayPlacesLabel(day, places);
+}
+
 /** One-line description of a day for pickers, e.g. "Day 2 · Sat, 13 Jun · Samarkand". */
-export function dayOptionLabel(timeline: DayTimeline): string {
+export function dayOptionLabel(timeline: DayTimeline, places: ReadonlyMap<string, Place>): string {
   const parts = [
     timeline.dayNumber === null ? "Outside dates" : `Day ${timeline.dayNumber}`,
     formatDayDate(timeline.day.date),
   ];
-  if (timeline.day.title !== undefined) parts.push(timeline.day.title);
+  const suffix = dayHeadingSuffix(timeline.day, places);
+  if (suffix !== undefined) parts.push(suffix);
   return parts.join(" · ");
 }
 

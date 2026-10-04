@@ -21,7 +21,8 @@ export function createPlaceRepository(db: TravelDatabase) {
     ...crud,
 
     /**
-     * Deletes a place and unlinks references to it: Activities keep their title,
+     * Deletes a place and unlinks references to it: it is removed from TripDay places
+     * of the day, Activities keep their title,
      * Transports get the place name as origin/destination text, Accommodations
      * receive the place's address and coordinates.
      */
@@ -31,6 +32,13 @@ export function createPlaceRepository(db: TravelDatabase) {
         if (!place) throw new EntityNotFoundError("Place", id);
         const updatedAt = nowInstant();
 
+        await db.tripDays.where("tripId").equals(place.tripId).modify((day) => {
+          if (!day.placeIds?.includes(id)) return;
+          const remaining = day.placeIds.filter((placeId) => placeId !== id);
+          if (remaining.length > 0) day.placeIds = remaining;
+          else delete day.placeIds;
+          day.updatedAt = updatedAt;
+        });
         await db.activities.where("placeId").equals(id).modify((activity) => {
           delete activity.placeId;
           activity.updatedAt = updatedAt;
