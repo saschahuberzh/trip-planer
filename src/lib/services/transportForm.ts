@@ -14,7 +14,7 @@ import { optionalText, normalizeTimeInput, UNPLANNED_VALUE } from "./itineraryFo
 import type { TransportInput } from "./itineraryService";
 import { parsePriceInput } from "./priceInput";
 
-export const MAX_TRANSPORT_TEXT_LENGTH = 120;
+const MAX_TRANSPORT_TEXT_LENGTH = 120;
 
 /** One end of a connection: a place of the trip, or free text. */
 export interface TransportEndValue {
@@ -97,7 +97,7 @@ export function transportToFormValues(transport: Transport, fallbackZone: string
 }
 
 /** 130 → "2:10". */
-export function formatDurationInput(minutes: number): string {
+function formatDurationInput(minutes: number): string {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 }
 

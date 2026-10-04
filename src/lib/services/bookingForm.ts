@@ -13,7 +13,7 @@ import {
   type LocalDateTimeValues,
 } from "./transportForm";
 
-export const MAX_BOOKING_TEXT_LENGTH = 120;
+const MAX_BOOKING_TEXT_LENGTH = 120;
 
 export interface BookingFormValues {
   type: BookingType;

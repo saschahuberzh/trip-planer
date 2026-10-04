@@ -6,8 +6,8 @@ import { isWallClockTime } from "@/lib/domain/dateTime";
 import type { Activity, TripDay } from "@/lib/domain/types";
 import type { ActivityInput, TripDayDetailsInput } from "./itineraryService";
 
-export const MAX_ACTIVITY_TITLE_LENGTH = 120;
-export const MAX_DAY_TITLE_LENGTH = 120;
+const MAX_ACTIVITY_TITLE_LENGTH = 120;
+const MAX_DAY_TITLE_LENGTH = 120;
 
 /** Form value of the day select for the Unplanned section. */
 export const UNPLANNED_VALUE = "";

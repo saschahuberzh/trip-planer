@@ -26,7 +26,7 @@ export function isSameEntry(entry: TimelineEntry, ref: TimelineEntryRef): boolea
 }
 
 /** Timeline order: `sortOrder`, ties broken by `id`. */
-export function compareTimelineEntries(a: TimelineEntry, b: TimelineEntry): number {
+function compareTimelineEntries(a: TimelineEntry, b: TimelineEntry): number {
   const bySortOrder = a.item.sortOrder - b.item.sortOrder;
   if (bySortOrder !== 0) return bySortOrder;
   return compareText(a.item.id, b.item.id);
@@ -58,7 +58,7 @@ export function moveWithin<T>(items: readonly T[], from: number, to: number): T[
  * Activity times belong to their day's date; transports use their local departure.
  * Times are never converted between timezones.
  */
-export function entryStartKey(entry: TimelineEntry, dayDate: string): string | undefined {
+function entryStartKey(entry: TimelineEntry, dayDate: string): string | undefined {
   if (entry.kind === "activity") {
     return entry.item.startTime === undefined ? undefined : `${dayDate}T${entry.item.startTime}`;
   }

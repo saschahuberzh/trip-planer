@@ -2,7 +2,7 @@
 // A new service worker installs in the background and waits; it only
 // activates after the user confirms (see activateWaitingWorker).
 
-export const SERVICE_WORKER_URL = "/sw.js";
+const SERVICE_WORKER_URL = "/sw.js";
 
 export type SkipWaitingMessage = { type: "SKIP_WAITING" };
 

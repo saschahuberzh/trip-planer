@@ -7,23 +7,22 @@ import { useItinerary } from "@/lib/hooks/useItinerary";
 import { appRoutePath } from "@/lib/routing/routes";
 import type { TimelineEntry } from "@/lib/services/itineraryOrdering";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { AlertIcon, ChevronRightIcon, InboxIcon, MapPinIcon } from "@/components/ui/icons";
 import { StaysOnDay } from "@/components/accommodation/StaysOnDay";
 import { ItineraryDialogs, type ItineraryDialog } from "./ItineraryDialogs";
 import { dayLabel, dayPlacesLabel, formatDayDate } from "./itineraryDisplay";
 import { TimelineList } from "./TimelineList";
+import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
 
 /** The trip's itinerary: outside-date days, all days chronologically, and Unplanned. */
 export function PlanScreen() {
   const itinerary = useItinerary();
 
-  if (itinerary.status === "loading") return <ItinerarySkeleton />;
+  if (itinerary.status === "loading") return <ScreenSkeleton />;
   if (itinerary.status === "error") {
     return (
-      <ItineraryMessage title="The itinerary couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </ItineraryMessage>
+      <LoadError what="The itinerary" />
     );
   }
   if (itinerary.data === undefined) return <TripNotFound />;
@@ -170,12 +169,12 @@ function DayCard({ tripId, timeline, outsideActions, accommodations, onOpenAccom
           <p className={`text-xs font-semibold tracking-wide uppercase ${timeline.outside ? "text-amber-700" : "text-teal-700"}`}>
             {dayLabel(timeline)}
           </p>
-          <h3 className="truncate text-lg font-semibold text-slate-900">
+          <h2 className="truncate text-lg font-semibold text-slate-900">
             {formatDayDate(day.date)}
             {(day.title ?? placesLabel) !== undefined && (
               <span className="font-normal text-slate-600"> · {day.title ?? placesLabel}</span>
             )}
-          </h3>
+          </h2>
           {day.title !== undefined && placesLabel !== undefined && (
             <p className="mt-0.5 flex items-center gap-1 text-sm text-teal-800">
               <MapPinIcon className="size-3.5 shrink-0" />
@@ -195,37 +194,5 @@ function DayCard({ tripId, timeline, outsideActions, accommodations, onOpenAccom
       />
       {outsideActions}
     </article>
-  );
-}
-
-export function ItinerarySkeleton() {
-  return (
-    <div className="mx-auto max-w-md space-y-4 px-4 py-5" aria-busy="true" aria-label="Loading itinerary">
-      {[0, 1, 2].map((key) => (
-        <div key={key} className="h-36 animate-pulse rounded-3xl bg-slate-200/70" />
-      ))}
-    </div>
-  );
-}
-
-export function ItineraryMessage({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="mx-auto max-w-md px-4 py-6">
-      <div className="rounded-3xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <div className="mt-2 text-slate-600">{children}</div>
-      </div>
-    </section>
-  );
-}
-
-export function TripNotFound() {
-  return (
-    <ItineraryMessage title="Trip not found">
-      This trip doesn&apos;t exist on this device. It may have been deleted.
-      <Link href={appRoutePath({ name: "trips" })} className={buttonClass("primary", "mt-4 w-full")}>
-        Back to trips
-      </Link>
-    </ItineraryMessage>
   );
 }

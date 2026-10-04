@@ -75,7 +75,7 @@ export function TimelineList({
   return (
     <div>
       {entries.length === 0 ? (
-        <div className="px-4 py-3 text-sm text-slate-500">{emptyState}</div>
+        <div className="px-4 py-3 text-sm text-slate-600">{emptyState}</div>
       ) : (
         <ol className="divide-y divide-slate-100" aria-busy={busy}>
           {entries.map((entry, index) => (
@@ -231,7 +231,7 @@ function EntryRow({
             )}
           </>
         ) : (
-          <span className="block text-xs font-medium text-slate-400">No time</span>
+          <span className="block text-xs font-medium text-slate-500">No time</span>
         )}
       </span>
       <span className="min-w-0 flex-1">

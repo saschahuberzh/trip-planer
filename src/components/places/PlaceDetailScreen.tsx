@@ -24,9 +24,9 @@ import {
 import { Sheet } from "@/components/ui/Sheet";
 import { formatDayDate } from "@/components/itinerary/itineraryDisplay";
 import { MoveSheet } from "@/components/itinerary/MoveSheet";
-import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "@/components/itinerary/PlanScreen";
 import { PLACE_TYPE_BADGE, PLACE_TYPE_LABELS, hasCoordinates } from "./placeDisplay";
 import { PlaceFormSheet } from "./PlaceFormSheet";
+import { LoadError, ScreenMessage, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
 
 /** One place: details, favorite/visited, where it's used, add to day, edit, delete. */
 export function PlaceDetailScreen() {
@@ -36,12 +36,10 @@ export function PlaceDetailScreen() {
   const itinerary = useItinerary();
   const placeId = route?.name === "trip-place" ? route.placeId : null;
 
-  if (data.status === "loading" || placeId === null) return <ItinerarySkeleton />;
+  if (data.status === "loading" || placeId === null) return <ScreenSkeleton />;
   if (data.status === "error") {
     return (
-      <ItineraryMessage title="This place couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </ItineraryMessage>
+      <LoadError what="This place" />
     );
   }
   if (data.data === undefined) return <TripNotFound />;
@@ -49,12 +47,12 @@ export function PlaceDetailScreen() {
   const placesPath = appRoutePath({ name: "trip-section", tripId: data.data.trip.id, section: "places" });
   if (summary === undefined) {
     return (
-      <ItineraryMessage title="Place not found">
+      <ScreenMessage title="Place not found">
         This place doesn&apos;t exist in this trip. It may have been deleted.
         <Link href={placesPath} className={buttonClass("primary", "mt-4 w-full")}>
           Back to places
         </Link>
-      </ItineraryMessage>
+      </ScreenMessage>
     );
   }
   const days = itinerary.status === "ready" && itinerary.data !== undefined ? itinerary.data.days : [];
@@ -138,7 +136,12 @@ function PlaceContent({ data, summary, days, placesPath }: PlaceContentProps) {
         </Detail>
         {place.website !== undefined && (
           <Detail label="Website">
-            <a href={place.website} target="_blank" rel="noopener noreferrer" className="break-all text-teal-700 underline">
+            <a
+              href={place.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center break-all text-teal-700 underline"
+            >
               {place.website}
             </a>
           </Detail>

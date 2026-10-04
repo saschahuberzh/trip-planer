@@ -14,8 +14,8 @@ import { StaysOnDay } from "@/components/accommodation/StaysOnDay";
 import { DayPlacesCard } from "./DayPlacesCard";
 import { ItineraryDialogs, type ItineraryDialog } from "./ItineraryDialogs";
 import { dayLabel, formatDayDate, formatDayDateLong } from "./itineraryDisplay";
-import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "./PlanScreen";
 import { TimelineList } from "./TimelineList";
+import { LoadError, ScreenMessage, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
 
 /** One day: date, title, notes and its ordered timeline. */
 export function DayScreen() {
@@ -23,12 +23,10 @@ export function DayScreen() {
   const itinerary = useItinerary();
   const dayId = route?.name === "trip-day" ? route.dayId : null;
 
-  if (itinerary.status === "loading" || dayId === null) return <ItinerarySkeleton />;
+  if (itinerary.status === "loading" || dayId === null) return <ScreenSkeleton />;
   if (itinerary.status === "error") {
     return (
-      <ItineraryMessage title="This day couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </ItineraryMessage>
+      <LoadError what="This day" />
     );
   }
   if (itinerary.data === undefined) return <TripNotFound />;
@@ -38,7 +36,7 @@ export function DayScreen() {
   const timeline = index >= 0 ? days[index] : outsideDays.find((candidate) => candidate.day.id === dayId);
   if (timeline === undefined) {
     return (
-      <ItineraryMessage title="Day not found">
+      <ScreenMessage title="Day not found">
         This day is no longer part of the trip. Its items may have been moved or the trip dates changed.
         <Link
           href={appRoutePath({ name: "trip-section", tripId: trip.id, section: "plan" })}
@@ -46,7 +44,7 @@ export function DayScreen() {
         >
           Back to itinerary
         </Link>
-      </ItineraryMessage>
+      </ScreenMessage>
     );
   }
   return (

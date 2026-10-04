@@ -28,6 +28,7 @@ export function PriceField({ amount, currency, error, onAmountChange, onCurrency
           <div className="w-28 shrink-0">
             <CurrencySelect
               id={`${props.id}-currency`}
+              aria-label="Currency"
               aria-invalid={false}
               value={currency}
               onChange={onCurrencyChange}

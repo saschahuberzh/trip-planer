@@ -10,7 +10,7 @@ import {
   type PlaceSearchResult,
 } from "./types";
 
-export const PHOTON_PROVIDER_ID = "photon";
+const PHOTON_PROVIDER_ID = "photon";
 export const DEFAULT_PHOTON_URL = "https://photon.komoot.io/api/";
 
 /** Languages Photon accepts; any other `lang` value is rejected with HTTP 400. */

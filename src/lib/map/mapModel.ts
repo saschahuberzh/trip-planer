@@ -85,7 +85,7 @@ function unique<T>(items: Iterable<T>): T[] {
 const toLatLng = (place: LocatedPlace): LatLng => ({ latitude: place.latitude, longitude: place.longitude });
 
 /** Where an accommodation is: its linked place (authoritative) or its own coordinates. */
-export function stayPosition(accommodation: Accommodation, places: ReadonlyMap<string, Place>): LatLng | undefined {
+function stayPosition(accommodation: Accommodation, places: ReadonlyMap<string, Place>): LatLng | undefined {
   if (accommodation.placeId !== undefined) {
     const place = places.get(accommodation.placeId);
     return place && isLocated(place) ? toLatLng(place) : undefined;
@@ -215,7 +215,7 @@ export interface DayNode {
  * known place are put in front (e.g. "Samarkand", then the sights of the day); with an empty
  * timeline the places of the day are the sequence. Directly repeated places are one node.
  */
-export function dayPlaceNodes(timeline: DayTimeline, places: ReadonlyMap<string, Place>): DayNode[] {
+function dayPlaceNodes(timeline: DayTimeline, places: ReadonlyMap<string, Place>): DayNode[] {
   const timelineNodes: DayNode[] = [];
   for (const entry of timeline.entries) {
     if (entry.kind === "activity") {
@@ -247,7 +247,7 @@ export function dayPlaceNodes(timeline: DayTimeline, places: ReadonlyMap<string,
 }
 
 /** A day's places in order (see dayPlaceNodes). */
-export function dayPlaceSequence(timeline: DayTimeline, places: ReadonlyMap<string, Place>): Place[] {
+function dayPlaceSequence(timeline: DayTimeline, places: ReadonlyMap<string, Place>): Place[] {
   return dayPlaceNodes(timeline, places).map((node) => node.place);
 }
 

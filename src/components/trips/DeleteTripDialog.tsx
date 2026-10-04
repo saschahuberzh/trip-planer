@@ -18,7 +18,7 @@ function plural(count: number, singular: string, pluralForm = `${singular}s`): s
 }
 
 /** Human-readable list of what deleting the trip removes; empty categories omitted. */
-export function describeDeletion(summary: TripDeletionSummary): string[] {
+function describeDeletion(summary: TripDeletionSummary): string[] {
   const items = [
     summary.days > 0 && plural(summary.days, "itinerary day"),
     summary.activities > 0 && plural(summary.activities, "activity", "activities"),

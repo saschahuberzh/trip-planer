@@ -6,9 +6,10 @@ import { useState, type ReactNode } from "react";
 import type { Trip } from "@/lib/domain/types";
 import { useCurrentTrip } from "@/lib/hooks/useCurrentTrip";
 import { appRoutePath } from "@/lib/routing/routes";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { CalendarIcon, ChevronRightIcon, GlobeIcon, PencilIcon, TrashIcon, WalletIcon } from "@/components/ui/icons";
 import { DeleteTripDialog } from "./DeleteTripDialog";
+import { LoadError, TripNotFound } from "@/components/ui/ScreenState";
 import { TripCoverImage } from "./TripCoverImage";
 import { TripFormSheet } from "./TripFormSheet";
 import {
@@ -32,23 +33,8 @@ export function TripOverview() {
       </div>
     );
   }
-  if (trip.status === "error") {
-    return (
-      <Message title="This trip couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </Message>
-    );
-  }
-  if (trip.data === undefined) {
-    return (
-      <Message title="Trip not found">
-        This trip doesn&apos;t exist on this device. It may have been deleted.
-        <Link href={appRoutePath({ name: "trips" })} className={buttonClass("primary", "mt-4 w-full")}>
-          Back to trips
-        </Link>
-      </Message>
-    );
-  }
+  if (trip.status === "error") return <LoadError what="This trip" />;
+  if (trip.data === undefined) return <TripNotFound />;
   return <TripOverviewContent trip={trip.data} />;
 }
 
@@ -131,23 +117,13 @@ function TripOverviewContent({ trip }: { trip: Trip }) {
 
 function Fact({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
-    <div className="flex gap-3 py-3.5">
-      <span className="mt-0.5 text-teal-700">{icon}</span>
-      <div className="min-w-0 flex-1">
-        <dt className="text-sm font-medium text-slate-500">{label}</dt>
-        <dd className="mt-0.5 font-medium text-slate-900">{children}</dd>
-      </div>
+    // dl > div > (dt, dd) only, so screen readers announce the pairs; the icon sits in the dt.
+    <div className="relative py-3.5 pl-8">
+      <dt className="text-sm font-medium text-slate-500">
+        <span className="absolute top-4 left-0 text-teal-700">{icon}</span>
+        {label}
+      </dt>
+      <dd className="mt-0.5 min-w-0 font-medium text-slate-900">{children}</dd>
     </div>
-  );
-}
-
-function Message({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="mx-auto max-w-md px-4 py-6">
-      <div className="rounded-3xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <div className="mt-2 text-slate-600">{children}</div>
-      </div>
-    </section>
   );
 }

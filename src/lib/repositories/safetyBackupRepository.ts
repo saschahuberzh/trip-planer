@@ -3,7 +3,7 @@ import { nowInstant } from "@/lib/domain/dateTime";
 import type { BackupData, SafetyBackup, SafetyBackupReason } from "@/lib/domain/types";
 import { newId } from "./shared";
 
-export const SAFETY_BACKUP_LIMIT = 3;
+const SAFETY_BACKUP_LIMIT = 3;
 
 /** Safety backups live in their own table, which restore never touches. */
 export function createSafetyBackupRepository(db: TravelDatabase) {

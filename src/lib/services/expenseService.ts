@@ -12,7 +12,7 @@ import { EntityNotFoundError, getRepositories, InvalidReferenceError, type NewEn
 export type ExpenseInput = Omit<NewEntity<Expense>, "tripId" | "amountInBaseCurrency">;
 
 /** Conversion fields for saving. Expenses in the base currency are always converted at rate 1. */
-export function conversionFor(
+function conversionFor(
   input: Pick<ExpenseInput, "originalAmount" | "originalCurrency" | "exchangeRateToBase">,
   baseCurrency: string,
 ): Pick<Expense, "exchangeRateToBase" | "amountInBaseCurrency"> {
@@ -25,7 +25,7 @@ export function conversionFor(
 }
 
 /** Newest first: dated by date (descending), undated last; then most recently created. */
-export function sortExpenses(expenses: readonly Expense[]): Expense[] {
+function sortExpenses(expenses: readonly Expense[]): Expense[] {
   return [...expenses].sort((a, b) => {
     if (a.date !== b.date) {
       if (a.date === undefined) return 1;

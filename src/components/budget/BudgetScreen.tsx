@@ -14,11 +14,11 @@ import type { Itinerary } from "@/lib/services/itineraryService";
 import { isOutsideTripDates } from "@/lib/services/tripDays";
 import { Button } from "@/components/ui/Button";
 import { AlertIcon, PlusIcon } from "@/components/ui/icons";
-import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "@/components/itinerary/PlanScreen";
 import { formatDayDate } from "@/components/itinerary/itineraryDisplay";
 import { formatMoney } from "@/components/trips/tripDisplay";
 import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_SYMBOLS, formatUnconverted } from "./budgetDisplay";
 import { ExpenseSheet, type ExpenseSheetTarget } from "./ExpenseSheet";
+import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
 
 type Filter = "all" | "paid" | "planned" | "unconverted";
 const FILTER_LABELS: Record<Filter, string> = { all: "All", paid: "Paid", planned: "Planned", unconverted: "Not converted" };
@@ -26,18 +26,10 @@ const FILTER_LABELS: Record<Filter, string> = { all: "All", paid: "Paid", planne
 /** Budget: overview in the base currency, expenses, costs by category and per day. */
 export function BudgetScreen() {
   const itinerary = useItinerary();
-  if (itinerary.status === "loading") return <ItinerarySkeleton />;
-  if (itinerary.status === "error") return <LoadError />;
+  if (itinerary.status === "loading") return <ScreenSkeleton />;
+  if (itinerary.status === "error") return <LoadError what="The budget" />;
   if (itinerary.data === undefined) return <TripNotFound />;
   return <BudgetData itinerary={itinerary.data} />;
-}
-
-function LoadError() {
-  return (
-    <ItineraryMessage title="The budget couldn't be loaded">
-      Your data has not been changed. Try reloading the app.
-    </ItineraryMessage>
-  );
 }
 
 function BudgetData({ itinerary }: { itinerary: Itinerary }) {
@@ -49,8 +41,8 @@ function BudgetData({ itinerary }: { itinerary: Itinerary }) {
     },
     [tripId],
   );
-  if (data.status === "loading") return <ItinerarySkeleton />;
-  if (data.status === "error") return <LoadError />;
+  if (data.status === "loading") return <ScreenSkeleton />;
+  if (data.status === "error") return <LoadError what="The budget" />;
   return <BudgetContent itinerary={itinerary} expenses={data.data.expenses} bookings={data.data.bookings} />;
 }
 

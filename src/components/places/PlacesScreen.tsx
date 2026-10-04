@@ -10,9 +10,9 @@ import { getPlaceService, type PlaceSummary, type TripPlaces } from "@/lib/servi
 import { Button } from "@/components/ui/Button";
 import { CheckCircleIcon, MapPinIcon, PlusIcon, SearchIcon, StarIcon } from "@/components/ui/icons";
 import { inputClass } from "@/components/trips/formFields";
-import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "@/components/itinerary/PlanScreen";
 import { PLACE_TYPE_BADGE, PLACE_TYPE_LABELS, placeLocation } from "./placeDisplay";
 import { PlaceFormSheet } from "./PlaceFormSheet";
+import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
 
 const STATUS_LABELS: Record<PlaceStatusFilter, string> = {
   all: "All",
@@ -28,12 +28,10 @@ const EMPTY_FILTER: PlaceFilter = { query: "", status: "all", type: undefined };
 /** The trip's list of places to visit: search, filters, favorite/visited. */
 export function PlacesScreen() {
   const data = useTripPlaces();
-  if (data.status === "loading") return <ItinerarySkeleton />;
+  if (data.status === "loading") return <ScreenSkeleton />;
   if (data.status === "error") {
     return (
-      <ItineraryMessage title="Places couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </ItineraryMessage>
+      <LoadError what="Places" />
     );
   }
   if (data.data === undefined) return <TripNotFound />;

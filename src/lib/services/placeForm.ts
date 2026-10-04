@@ -8,7 +8,7 @@ import type { PlaceSearchResult } from "@/lib/placeSearch/types";
 import { optionalText } from "./itineraryForms";
 import type { PlaceInput } from "./placeService";
 
-export const MAX_PLACE_NAME_LENGTH = 120;
+const MAX_PLACE_NAME_LENGTH = 120;
 
 export interface PlaceFormValues {
   name: string;

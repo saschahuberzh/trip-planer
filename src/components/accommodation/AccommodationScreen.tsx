@@ -8,20 +8,18 @@ import { nightCoverage, nightsOf } from "@/lib/services/accommodationSchedule";
 import type { Itinerary } from "@/lib/services/itineraryService";
 import { Button } from "@/components/ui/Button";
 import { MapPinIcon, PlusIcon } from "@/components/ui/icons";
-import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "@/components/itinerary/PlanScreen";
 import { formatMoney } from "@/components/trips/tripDisplay";
 import { AccommodationSheet, type AccommodationSheetTarget } from "./AccommodationSheet";
 import { stayDates, stayLocation } from "./stayDisplay";
+import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
 
 /** All accommodation of the trip, chronologically. */
 export function AccommodationScreen() {
   const itinerary = useItinerary();
-  if (itinerary.status === "loading") return <ItinerarySkeleton />;
+  if (itinerary.status === "loading") return <ScreenSkeleton />;
   if (itinerary.status === "error") {
     return (
-      <ItineraryMessage title="Accommodation couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </ItineraryMessage>
+      <LoadError what="Accommodation" />
     );
   }
   if (itinerary.data === undefined) return <TripNotFound />;

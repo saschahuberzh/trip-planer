@@ -33,9 +33,9 @@ export function TripHeader() {
             {trip.status === "loading" ? (
               <div aria-hidden="true" className="h-7 w-48 animate-pulse rounded-lg bg-slate-200" />
             ) : (
-              <p className="text-2xl font-bold tracking-tight text-slate-400">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-500">
                 {trip.status === "error" ? "Trip" : "Trip not found"}
-              </p>
+              </h1>
             )}
           </div>
         )}

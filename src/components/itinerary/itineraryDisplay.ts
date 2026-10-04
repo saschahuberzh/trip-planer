@@ -27,7 +27,7 @@ export function dayPlacesLabel(day: TripDay, places: ReadonlyMap<string, Place>)
 }
 
 /** The day's title, else its places of the day. */
-export function dayHeadingSuffix(day: TripDay, places: ReadonlyMap<string, Place>): string | undefined {
+function dayHeadingSuffix(day: TripDay, places: ReadonlyMap<string, Place>): string | undefined {
   return day.title ?? dayPlacesLabel(day, places);
 }
 

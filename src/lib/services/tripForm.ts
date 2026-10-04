@@ -23,7 +23,7 @@ export type TripFormErrors = Partial<Record<keyof TripFormValues, string>>;
 
 export type TripFormResult = { ok: true; input: TripInput } | { ok: false; errors: TripFormErrors };
 
-export const MAX_TRIP_NAME_LENGTH = 120;
+const MAX_TRIP_NAME_LENGTH = 120;
 /** Guards against typos such as a wrong year creating thousands of days. */
 export const MAX_TRIP_DAYS = 366;
 
@@ -54,7 +54,7 @@ export function tripToFormValues(trip: Trip): TripFormValues {
 }
 
 /** Trims countries and drops empty entries and case-insensitive duplicates. */
-export function normalizeCountries(countries: readonly string[]): string[] {
+function normalizeCountries(countries: readonly string[]): string[] {
   const result: string[] = [];
   const seen = new Set<string>();
   for (const raw of countries) {

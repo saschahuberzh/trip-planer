@@ -93,13 +93,15 @@ function DataSection() {
 
   return (
     <Card title="Data">
+      {info.status === "error" && <Alert tone="error">The backup status couldn&apos;t be read. Your data is unchanged; exporting may still work.</Alert>}
       <div>
         <h3 className="font-semibold text-slate-900">Export backup</h3>
         <p className="mt-0.5 text-sm text-slate-600">
           One JSON file with all trips, places, plans, bookings, expenses and cover photos.
         </p>
         <p className="mt-1 text-sm text-slate-700">
-          Last export: <strong>{lastExportAt ? formatInstant(lastExportAt) : "never"}</strong>
+          Last export:{" "}
+          <strong>{info.status === "loading" ? "…" : info.status === "error" ? "unknown" : lastExportAt ? formatInstant(lastExportAt) : "never"}</strong>
         </p>
       </div>
       {stale && (
@@ -297,7 +299,8 @@ function SafetyBackupsSection() {
       <p className="text-sm text-slate-600">
         Created automatically before each import. The latest 3 are kept on this device; export one to restore it.
       </p>
-      {backups.status === "ready" && backups.data.length === 0 && <p className="text-sm text-slate-500">None yet.</p>}
+      {backups.status === "error" && <Alert tone="error">The safety backups couldn&apos;t be read.</Alert>}
+      {backups.status === "ready" && backups.data.length === 0 && <p className="text-sm text-slate-600">None yet.</p>}
       {backups.status === "ready" && backups.data.length > 0 && (
         <ul className="divide-y divide-slate-100">
           {backups.data.map((backup) => (
@@ -349,7 +352,9 @@ function StorageSection() {
     <Card title="Storage">
       <p className="text-sm">
         Status:{" "}
-        {persistence ? (
+        {info.status !== "ready" ? (
+          <strong className="text-slate-700">{info.status === "loading" ? "…" : "unknown"}</strong>
+        ) : persistence ? (
           <strong className={PERSISTENCE_LABELS[persistence.status].tone}>{PERSISTENCE_LABELS[persistence.status].text}</strong>
         ) : (
           <strong className="text-slate-700">Not requested yet</strong>

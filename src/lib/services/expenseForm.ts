@@ -10,7 +10,7 @@ import type { ExpenseInput } from "./expenseService";
 import { optionalText } from "./itineraryForms";
 import { parseAmount } from "./tripForm";
 
-export const MAX_EXPENSE_TITLE_LENGTH = 120;
+const MAX_EXPENSE_TITLE_LENGTH = 120;
 
 export interface ExpenseFormValues {
   title: string;

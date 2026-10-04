@@ -9,20 +9,18 @@ import { getBookingService, groupBookings } from "@/lib/services/bookingService"
 import type { Itinerary } from "@/lib/services/itineraryService";
 import { Button } from "@/components/ui/Button";
 import { ChevronRightIcon, PlusIcon } from "@/components/ui/icons";
-import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "@/components/itinerary/PlanScreen";
 import { formatMoney } from "@/components/trips/tripDisplay";
 import { BOOKING_TYPE_LABELS, BOOKING_TYPE_SYMBOLS, bookingLinkOptions, formatBookingDateTime, linkKey, type LinkOption } from "./bookingDisplay";
 import { BookingSheet, type BookingSheetTarget } from "./BookingSheet";
+import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
 
 /** The trip's bookings: upcoming, without date, past. */
 export function BookingsScreen() {
   const itinerary = useItinerary();
-  if (itinerary.status === "loading") return <ItinerarySkeleton />;
+  if (itinerary.status === "loading") return <ScreenSkeleton />;
   if (itinerary.status === "error") {
     return (
-      <ItineraryMessage title="Bookings couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </ItineraryMessage>
+      <LoadError what="Bookings" />
     );
   }
   if (itinerary.data === undefined) return <TripNotFound />;
@@ -37,12 +35,10 @@ function BookingsContent({ itinerary }: { itinerary: Itinerary }) {
   const [now] = useState(() => Date.now());
   const options = useMemo(() => new Map(bookingLinkOptions(itinerary).map((option) => [option.key, option])), [itinerary]);
 
-  if (bookings.status === "loading") return <ItinerarySkeleton />;
+  if (bookings.status === "loading") return <ScreenSkeleton />;
   if (bookings.status === "error") {
     return (
-      <ItineraryMessage title="Bookings couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </ItineraryMessage>
+      <LoadError what="Bookings" />
     );
   }
   const groups = groupBookings(bookings.data, now);

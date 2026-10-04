@@ -30,7 +30,7 @@ function endName(placeId: string | undefined, text: string | undefined, places: 
 }
 
 /** "Tashkent → Samarkand", or undefined when neither end is known. */
-export function transportRoute(transport: Transport, places: ReadonlyMap<string, Place>): string | undefined {
+function transportRoute(transport: Transport, places: ReadonlyMap<string, Place>): string | undefined {
   const origin = endName(transport.originPlaceId, transport.originText, places);
   const destination = endName(transport.destinationPlaceId, transport.destinationText, places);
   if (origin === undefined && destination === undefined) return undefined;

@@ -140,6 +140,8 @@ export function CurrencySelect(props: {
   onChange: (code: string) => void;
   "aria-invalid": boolean;
   "aria-describedby"?: string;
+  /** Needed when the select has no own <label> (e.g. next to an amount). */
+  "aria-label"?: string;
 }) {
   const { value, onChange, ...rest } = props;
   const options = useMemo(

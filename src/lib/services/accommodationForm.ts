@@ -10,7 +10,7 @@ import { normalizeTimeInput, optionalText } from "./itineraryForms";
 import { normalizeWebsite } from "./placeForm";
 import { parsePriceInput } from "./priceInput";
 
-export const MAX_ACCOMMODATION_TEXT_LENGTH = 120;
+const MAX_ACCOMMODATION_TEXT_LENGTH = 120;
 
 export interface AccommodationFormValues {
   name: string;

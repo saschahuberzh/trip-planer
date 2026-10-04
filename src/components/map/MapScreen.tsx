@@ -25,7 +25,6 @@ import { Button } from "@/components/ui/Button";
 import { ChevronRightIcon, CloseIcon, MapPinIcon } from "@/components/ui/icons";
 import { inputClass } from "@/components/trips/formFields";
 import { dayOptionLabel } from "@/components/itinerary/itineraryDisplay";
-import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "@/components/itinerary/PlanScreen";
 import { PLACE_TYPE_BADGE, PLACE_TYPE_LABELS, PLACE_TYPE_SYMBOLS } from "@/components/places/placeDisplay";
 import { stayDates, stayLocation } from "@/components/accommodation/stayDisplay";
 import { TransportSheet } from "@/components/itinerary/TransportSheet";
@@ -37,6 +36,7 @@ import {
 } from "@/components/itinerary/transportDisplay";
 import { MapPickerSheet } from "./MapPickerSheet";
 import { MapView } from "./MapView";
+import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
 
 const VIEW_LABELS: Record<MapViewMode, string> = { route: "Route", day: "Day", all: "All places" };
 
@@ -67,12 +67,10 @@ function initialState(days: DayTimeline[]): MapState {
 /** The trip map: route, one day, or all places. */
 export function MapScreen() {
   const itinerary = useItinerary();
-  if (itinerary.status === "loading") return <ItinerarySkeleton />;
+  if (itinerary.status === "loading") return <ScreenSkeleton />;
   if (itinerary.status === "error") {
     return (
-      <ItineraryMessage title="The map couldn't be loaded">
-        Your data has not been changed. Try reloading the app.
-      </ItineraryMessage>
+      <LoadError what="The map" />
     );
   }
   if (itinerary.data === undefined) return <TripNotFound />;
