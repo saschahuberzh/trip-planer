@@ -222,3 +222,40 @@ export function formatCalendarDateRange(
     calendarDateToUtcMs(end),
   );
 }
+
+/** Calendar date part of a LocalDateTime ("YYYY-MM-DD"). */
+export function localDatePart(value: LocalDateTime): string {
+  return value.local.slice(0, 10);
+}
+
+/** Wall-clock time part of a LocalDateTime ("HH:mm"). */
+export function localTimePart(value: LocalDateTime): string {
+  return value.local.slice(11, 16);
+}
+
+/** Whole calendar days from `from` to `to` (negative if `to` is earlier). */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((calendarDateToUtcMs(to) - calendarDateToUtcMs(from)) / MS_PER_DAY);
+}
+
+/** e.g. 130 → "2 h 10 min", 45 → "45 min", 120 → "2 h". */
+export function formatDurationMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest} min`;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
+/** The device's IANA time zone (only used as a default suggestion). */
+export function deviceTimeZone(): string {
+  return new Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+/** UTC offset label of a time zone at a local date/time, e.g. "GMT+5". */
+export function timeZoneOffsetLabel(timeZone: string, at: LocalDateTime | undefined = undefined): string {
+  const instant = at === undefined ? Date.now() : localDateTimeToEpochMs(at);
+  const part = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "shortOffset" })
+    .formatToParts(instant)
+    .find((item) => item.type === "timeZoneName");
+  return part?.value ?? "";
+}

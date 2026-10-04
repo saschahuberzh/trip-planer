@@ -256,19 +256,31 @@ The application must remain usable if map loading fails.
 # Phase 7 – Transport
 
 TRANSPORT-001
-Create transport (`LocalDateTime` departure/arrival, calculated duration with optional override).
+Create transport (SCREENS.md "Create / Edit Transport": `LocalDateTime` departure/arrival with
+time zone, calculated duration with optional override, origin/destination as Place or text).
 
 TRANSPORT-002
 Edit transport.
 
 TRANSPORT-003
-Delete transport.
+Delete transport with confirmation (unlink bookings/expenses).
 
 TRANSPORT-004
-Display transport in the shared itinerary timeline.
+Display transport in the shared itinerary timeline ("Add transport" in Plan and Day View;
+symbol, route, local times, "+1 day", duration).
 
 TRANSPORT-005
-Display relevant connections on map.
+Map connections: transport symbols on route and day segments, line styles, tap for details
+(SCREENS.md "Map"); day view includes transport origin/destination in timeline order.
+
+TRANSPORT-006
+Suggest places of the day from a transport's origin/destination (confirmation required).
+
+Acceptance criteria:
+
+Duration calculation across time zones and day boundaries has tests.
+Map connection matching (route and day views) has tests.
+Transports work offline like activities.
 
 ---
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import type { Activity, Place } from "@/lib/domain/types";
+import type { Activity, Place, Transport } from "@/lib/domain/types";
 import { useItinerary } from "@/lib/hooks/useItinerary";
 import { appRoutePath } from "@/lib/routing/routes";
 import type { TimelineEntry } from "@/lib/services/itineraryOrdering";
@@ -37,6 +37,8 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
     onAdd: () => setDialog({ type: "create-activity", tripDayId }),
     onOpenActivity: (activity: Activity) => setDialog({ type: "edit-activity", activity }),
     onMoveEntry: (entry: TimelineEntry) => setDialog({ type: "move-entry", entry }),
+    onAddTransport: () => setDialog({ type: "create-transport", tripDayId }),
+    onOpenTransport: (transport: Transport) => setDialog({ type: "edit-transport", transport }),
   });
 
   return (
@@ -122,7 +124,7 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
           entries={unplanned}
           places={itinerary.places}
           emptyState="Ideas without a day go here. Assign them to a day whenever you're ready."
-          addLabel="Add idea"
+          ideas
           {...timelineHandlers(undefined)}
         />
       </section>
@@ -139,6 +141,8 @@ type DayCardProps = {
   onAdd: () => void;
   onOpenActivity: (activity: Activity) => void;
   onMoveEntry: (entry: TimelineEntry) => void;
+  onAddTransport: () => void;
+  onOpenTransport: (transport: Transport) => void;
   outsideActions?: ReactNode;
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Activity, TripDay } from "@/lib/domain/types";
+import type { Activity, Transport, TripDay } from "@/lib/domain/types";
 import { entryRef, type TimelineEntry } from "@/lib/services/itineraryOrdering";
 import { getItineraryService, type DayTimeline, type Itinerary } from "@/lib/services/itineraryService";
 import { getPlaceService } from "@/lib/services/placeService";
@@ -10,11 +10,14 @@ import { ActivitySheet } from "./ActivitySheet";
 import { DayDetailsSheet, DeleteOutsideDaySheet } from "./DaySheets";
 import { entryTitle, formatDayDate } from "./itineraryDisplay";
 import { MoveSheet } from "./MoveSheet";
+import { TransportSheet } from "./TransportSheet";
 
 export type ItineraryDialog =
   | { type: "create-activity"; tripDayId: string | undefined }
   | { type: "edit-activity"; activity: Activity }
   | { type: "add-place"; tripDayId: string }
+  | { type: "create-transport"; tripDayId: string | undefined }
+  | { type: "edit-transport"; transport: Transport }
   | { type: "move-entry"; entry: TimelineEntry }
   | { type: "edit-day"; day: TripDay }
   | { type: "move-day-entries"; timeline: DayTimeline }
@@ -71,7 +74,7 @@ export function ItineraryDialogs({ itinerary, dialog, onClose, onDayDeleted }: I
         title="Move to…"
         description={
           dialog?.type === "move-entry"
-            ? `“${entryTitle(dialog.entry)}” is added at the end of the chosen day.`
+            ? `“${entryTitle(dialog.entry, itinerary.places)}” is added at the end of the chosen day.`
             : ""
         }
         days={days}
@@ -106,8 +109,21 @@ export function ItineraryDialogs({ itinerary, dialog, onClose, onDayDeleted }: I
 
       <DeleteOutsideDaySheet
         timeline={dialog?.type === "delete-day" ? dialog.timeline : null}
+        places={itinerary.places}
         onClose={onClose}
         onDeleted={onDayDeleted}
+      />
+
+      <TransportSheet
+        itinerary={itinerary}
+        target={
+          dialog?.type === "create-transport"
+            ? { mode: "create", tripDayId: dialog.tripDayId }
+            : dialog?.type === "edit-transport"
+              ? { mode: "edit", transport: dialog.transport }
+              : null
+        }
+        onClose={onClose}
       />
 
       <TripFormSheet open={dialog?.type === "edit-trip"} onClose={onClose} trip={trip} />

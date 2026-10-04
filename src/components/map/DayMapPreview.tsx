@@ -14,7 +14,7 @@ export function DayMapPreview({ itinerary, tripDayId }: { itinerary: Itinerary; 
   if (model.markers.length === 0) return null;
   return (
     <section aria-label="Map of this day" className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
-      <MapView markers={model.markers} line={model.line} fitKey={tripDayId} interactive={false} className="h-44" />
+      <MapView markers={model.markers} segments={model.segments} fitKey={tripDayId} interactive={false} className="h-44" />
       <Link
         href={mapDayPath(itinerary.trip.id, tripDayId)}
         className="flex min-h-11 items-center justify-between px-4 text-sm font-semibold text-teal-700 hover:bg-slate-50"

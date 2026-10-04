@@ -5,7 +5,7 @@
  * repositories only store what this service computes.
  */
 import { calendarDaysInclusive } from "@/lib/domain/dateTime";
-import type { Activity, Place, Trip, TripDay } from "@/lib/domain/types";
+import type { Activity, Place, Transport, Trip, TripDay } from "@/lib/domain/types";
 import { EntityNotFoundError, getRepositories, type Repositories } from "@/lib/repositories";
 import {
   isSameEntry,
@@ -22,6 +22,18 @@ import { isOutsideTripDates, syncTripDays } from "./tripDays";
 export type ActivityInput = Pick<Activity, "title" | "startTime" | "endTime" | "notes" | "placeId">;
 
 export type TripDayDetailsInput = Pick<TripDay, "title" | "notes">;
+
+/** Transport fields edited by the user (everything except trip, day and order). */
+export type TransportInput = Omit<Transport, "id" | "tripId" | "tripDayId" | "sortOrder" | "createdAt" | "updatedAt">;
+
+export interface TransportSaveResult {
+  transport: Transport;
+  /**
+   * Places of the day to offer for the transport's day: [origin, destination] when both
+   * are places and the day has no places of the day yet. Never applied automatically.
+   */
+  suggestedDayPlaces?: string[];
+}
 
 export interface DayTimeline {
   day: TripDay;
@@ -119,6 +131,33 @@ export function createItineraryService(repos: Repositories) {
     await writeBucket(reordered, toTripDayId);
     await writeBucket(remaining, fromTripDayId);
     await removeIfEmptyOutside(fromTripDayId);
+  }
+
+  /** Every TransportInput key, so that cleared optional fields are removed on update. */
+  function transportFields(input: TransportInput): TransportInput {
+    return {
+      type: input.type,
+      originPlaceId: input.originPlaceId,
+      originText: input.originText,
+      destinationPlaceId: input.destinationPlaceId,
+      destinationText: input.destinationText,
+      departure: input.departure,
+      arrival: input.arrival,
+      durationMinutes: input.durationMinutes,
+      price: input.price,
+      currency: input.currency,
+      bookingReference: input.bookingReference,
+      notes: input.notes,
+    };
+  }
+
+  async function withSuggestion(transport: Transport): Promise<TransportSaveResult> {
+    const { tripDayId, originPlaceId, destinationPlaceId } = transport;
+    if (tripDayId === undefined || originPlaceId === undefined || destinationPlaceId === undefined) return { transport };
+    if (originPlaceId === destinationPlaceId) return { transport };
+    const day = await repos.tripDays.get(tripDayId);
+    if (day === undefined || day.placeIds !== undefined) return { transport };
+    return { transport, suggestedDayPlaces: [originPlaceId, destinationPlaceId] };
   }
 
   function toTimeline(trip: Trip, day: TripDay, entries: TimelineEntry[]): DayTimeline {
@@ -222,6 +261,41 @@ export function createItineraryService(repos: Repositories) {
         if (activity.tripDayId !== tripDayId) {
           await moveEntryInTransaction({ kind: "activity", id }, tripDayId);
         }
+      });
+    },
+
+    /** Appends a new transport to the day, or to Unplanned when `tripDayId` is undefined. */
+    createTransport(tripId: string, tripDayId: string | undefined, input: TransportInput): Promise<TransportSaveResult> {
+      return repos.transaction(async () => {
+        const bucket = await listBucket(tripId, tripDayId);
+        const transport = await repos.transports.create({
+          ...transportFields(input),
+          tripId,
+          tripDayId,
+          sortOrder: nextSortOrder(bucket),
+        });
+        return withSuggestion(transport);
+      });
+    },
+
+    /** Updates the transport; a changed day appends it to the end of the new bucket. */
+    updateTransport(id: string, input: TransportInput, tripDayId: string | undefined): Promise<TransportSaveResult> {
+      return repos.transaction(async () => {
+        const transport = await repos.transports.update(id, transportFields(input));
+        if (transport.tripDayId !== tripDayId) await moveEntryInTransaction({ kind: "transport", id }, tripDayId);
+        const saved = await repos.transports.get(id);
+        if (!saved) throw new EntityNotFoundError("Transport", id);
+        return withSuggestion(saved);
+      });
+    },
+
+    /** Deletes the transport (unlinking Bookings/Expenses that reference it). */
+    deleteTransport(id: string): Promise<void> {
+      return repos.transaction(async () => {
+        const transport = await repos.transports.get(id);
+        if (!transport) throw new EntityNotFoundError("Transport", id);
+        await repos.transports.delete(id);
+        await removeIfEmptyOutside(transport.tripDayId);
       });
     },
 

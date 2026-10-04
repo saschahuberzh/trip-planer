@@ -1,5 +1,5 @@
 import type { LatLng } from "@/lib/domain/coordinates";
-import type { MapMarker } from "@/lib/map/mapModel";
+import type { MapMarker, MapSegment } from "@/lib/map/mapModel";
 
 /**
  * Provider-neutral map props. Screens depend only on these; the map library
@@ -7,10 +7,13 @@ import type { MapMarker } from "@/lib/map/mapModel";
  */
 export interface MapViewProps {
   markers: readonly MapMarker[];
-  /** Straight line through these points, in order. */
-  line?: readonly LatLng[];
+  /** Straight segments between stops; segments with a transport show its symbol. */
+  segments?: readonly MapSegment[];
   selectedPlaceId?: string | null;
+  /** Called with a place ID, or null when the empty map is tapped. */
   onSelectPlace?: (placeId: string | null) => void;
+  /** Called when a transport symbol is tapped. */
+  onSelectTransport?: (transportId: string) => void;
   /** The map fits to its markers/line whenever this value changes. */
   fitKey?: string;
   /** Centre when there is nothing to fit. */

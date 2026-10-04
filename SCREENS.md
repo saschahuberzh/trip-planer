@@ -150,6 +150,14 @@ If days with user data fall outside the trip dates, an "Outside trip dates" sect
 
 ---
 
+Timeline entries:
+
+- Activity: time (or "No time"), title, place, notes.
+- Transport: type symbol, "Origin → Destination", local departure–arrival times
+  (arrival on a later date marked "+1 day"), duration; tapping opens the transport form.
+
+---
+
 # 5. Day View
 
 Displays:
@@ -183,6 +191,28 @@ Activity form (create/edit):
 
 ---
 
+# 5a. Create / Edit Transport
+
+Sheet opened from "Add transport" (Plan, Day View) or by tapping a transport entry.
+
+Fields:
+
+- type (flight, train, bus, car, taxi, ferry, walking, other)
+- origin and destination: select/create a Place (as in the activity form) or enter text
+- departure and arrival: date, time and time zone each (optional); the time zone defaults to the
+  last one used in this trip, else the device's time zone; times are shown exactly as entered
+- duration: calculated from departure and arrival (time-zone aware) and shown read-only;
+  an explicit duration can be entered when exact times are unknown
+- day (defaults to the day of the departure date, else the day it was added from) or Unplanned
+- price and currency (informational, not counted in the budget), booking reference, notes
+
+Delete with confirmation (bookings/expenses linking to it are unlinked).
+
+After saving a transport with origin and destination places on a day without places of the day:
+"Set places of the day to Tashkent → Samarkand?" (Yes / No).
+
+---
+
 # 6. Map
 
 Full-screen or near-full-screen map.
@@ -192,8 +222,19 @@ Views:
 - **Route**: the places of the day of all days in chronological order, numbered and connected
   with straight lines. Consecutive days at the same place are merged into one stop
   (e.g. "Day 1–2 · Tashkent"). Days without places of the day are skipped.
-- **Day**: one selected day — its places of the day and the places of its activities,
-  numbered in order (places of the day first, then timeline order), connected with lines.
+  A segment between two consecutive stops that a transport connects (origin → destination,
+  on a day within the segment's days) shows that transport's symbol at its midpoint.
+- **Day**: one selected day — its timeline in order (activity places; for transports their origin
+  and destination), preceded by the places of the day that come before the first place the
+  timeline already contains (e.g. "Samarkand", then the day's sights). Without timeline places,
+  the places of the day alone. Numbered and connected; the segment of a transport shows its symbol.
+
+Connections (transport):
+
+- Symbol by type: flight ✈, train 🚆, bus 🚌, car/taxi 🚗, ferry ⛴, walking 🚶, other ➜.
+- Line style: flights dotted, all other connections solid, segments without a transport dashed.
+- Tapping a symbol opens the transport's details (type, origin → destination, local times,
+  duration, booking reference) with a link to edit it.
 - **All places**: every place with coordinates, coloured/labelled by the day(s) it is used on
   (places of the day or activities); unplanned places in a neutral style. Filter by day.
 

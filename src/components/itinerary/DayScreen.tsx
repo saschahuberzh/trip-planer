@@ -148,6 +148,8 @@ function DayContent({ itinerary, timeline, previous, next }: DayContentProps) {
           onAddPlace={() => setDialog({ type: "add-place", tripDayId: day.id })}
           onOpenActivity={(activity) => setDialog({ type: "edit-activity", activity })}
           onMoveEntry={(entry) => setDialog({ type: "move-entry", entry })}
+          onAddTransport={() => setDialog({ type: "create-transport", tripDayId: day.id })}
+          onOpenTransport={(transport) => setDialog({ type: "edit-transport", transport })}
         />
       </section>
 

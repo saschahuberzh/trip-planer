@@ -1,18 +1,9 @@
 import { formatCalendarDate } from "@/lib/domain/dateTime";
-import type { Place, TransportType, TripDay } from "@/lib/domain/types";
+import type { Place, TripDay } from "@/lib/domain/types";
 import type { TimelineEntry } from "@/lib/services/itineraryOrdering";
 import type { DayTimeline } from "@/lib/services/itineraryService";
+import { transportTimes, transportTitle } from "./transportDisplay";
 
-const TRANSPORT_TYPE_LABELS: Record<TransportType, string> = {
-  flight: "Flight",
-  train: "Train",
-  bus: "Bus",
-  car: "Car",
-  taxi: "Taxi",
-  ferry: "Ferry",
-  walking: "Walk",
-  other: "Transport",
-};
 
 /** e.g. "Fri, 12 Jun". */
 export function formatDayDate(date: string): string {
@@ -51,15 +42,12 @@ export function dayOptionLabel(timeline: DayTimeline, places: ReadonlyMap<string
   return parts.join(" · ");
 }
 
-export function entryTitle(entry: TimelineEntry): string {
-  if (entry.kind === "activity") return entry.item.title;
-  const { originText, destinationText, type } = entry.item;
-  const route = [originText, destinationText].filter((part) => part !== undefined).join(" → ");
-  return route === "" ? TRANSPORT_TYPE_LABELS[type] : `${TRANSPORT_TYPE_LABELS[type]} · ${route}`;
+export function entryTitle(entry: TimelineEntry, places: ReadonlyMap<string, Place>): string {
+  return entry.kind === "activity" ? entry.item.title : transportTitle(entry.item, places);
 }
 
 /** Start and end wall-clock times as entered, never converted. */
-export function entryTimes(entry: TimelineEntry): { start?: string; end?: string } {
-  if (entry.kind === "activity") return { start: entry.item.startTime, end: entry.item.endTime };
-  return { start: entry.item.departure?.local.slice(11), end: entry.item.arrival?.local.slice(11) };
+export function entryTimes(entry: TimelineEntry): { start?: string; end?: string; arrivalDays: number } {
+  if (entry.kind === "activity") return { start: entry.item.startTime, end: entry.item.endTime, arrivalDays: 0 };
+  return transportTimes(entry.item);
 }

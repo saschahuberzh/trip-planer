@@ -289,6 +289,29 @@ Duration:
 - `durationMinutes` is stored only when the user explicitly enters it (e.g. no exact times known).
   An explicit value takes precedence for display.
 
+Origin and destination:
+
+- Each end is either a Place (`originPlaceId` / `destinationPlaceId`) or free text
+  (`originText` / `destinationText`, e.g. "Bus station North"), never both.
+- Only ends with a Place that has coordinates can be drawn on the map.
+
+Timeline:
+
+- A Transport is a regular timeline entry (same ordering, moving, reordering and Unplanned as Activities).
+- `tripDayId` is normally the departure day; when a departure date is entered, the form preselects
+  the TripDay with that date (if any). The user can choose another day or Unplanned.
+- An arrival on a later date is shown as such (e.g. "+1 day"); the entry stays on its day.
+
+Places of the day suggestion:
+
+- When a transport with origin and destination Places is saved on a day without places of the day,
+  the app offers to set the day's places to `[origin, destination]`. Nothing is changed without confirmation.
+
+Map:
+
+- A Transport whose origin and destination Places both have coordinates is a **connection**:
+  drawn between them with a symbol for its `type` (see SCREENS.md "Map").
+
 ---
 
 ## Accommodation

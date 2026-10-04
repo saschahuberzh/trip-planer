@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import type { TripDay } from "@/lib/domain/types";
+import type { Place, TripDay } from "@/lib/domain/types";
 import { dayToFormValues, validateDayDetailsForm, type DayDetailsFormValues } from "@/lib/services/itineraryForms";
 import { getItineraryService, type DayTimeline } from "@/lib/services/itineraryService";
 import { Button } from "@/components/ui/Button";
@@ -106,10 +106,12 @@ function DayDetailsForm({
 /** Explicit confirmation listing everything deleted with a day outside the trip dates. */
 export function DeleteOutsideDaySheet({
   timeline,
+  places,
   onClose,
   onDeleted,
 }: {
   timeline: DayTimeline | null;
+  places: ReadonlyMap<string, Place>;
   onClose: () => void;
   onDeleted?: () => void;
 }) {
@@ -166,7 +168,7 @@ export function DeleteOutsideDaySheet({
               <p className="text-sm font-medium text-slate-900">This also deletes:</p>
               <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm">
                 {timeline.entries.map((entry) => (
-                  <li key={`${entry.kind}:${entry.item.id}`}>{entryTitle(entry)}</li>
+                  <li key={`${entry.kind}:${entry.item.id}`}>{entryTitle(entry, places)}</li>
                 ))}
               </ul>
             </div>

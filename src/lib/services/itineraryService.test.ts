@@ -536,6 +536,90 @@ describe("places of the day", () => {
   });
 });
 
+describe("transports", () => {
+  const city = (name: string) => ({ name, type: "city" as const, favorite: false, visited: false });
+  const train = { type: "train" as const };
+
+  it("creates transports in the shared timeline and edits them", async () => {
+    const { trip, days } = await setup();
+    await add(trip, days[1].id, "Breakfast");
+    const { transport } = await itinerary.createTransport(trip.id, days[1].id, {
+      ...train,
+      originText: "Tashkent",
+      destinationText: "Samarkand",
+      departure: { local: "2026-06-13T09:30", timeZone: "Asia/Tashkent" },
+      bookingReference: "ABC123",
+    });
+    expect(transport).toMatchObject({ tripDayId: days[1].id, sortOrder: 1 });
+    expect((await load(trip.id)).days[1].entries.map((entry) => entry.kind)).toEqual(["activity", "transport"]);
+
+    await itinerary.updateTransport(transport.id, { type: "bus", originText: "Tashkent" }, days[1].id);
+    const stored = await repos.transports.get(transport.id);
+    expect(stored).toMatchObject({ type: "bus", originText: "Tashkent", sortOrder: 1 });
+    expect(stored).not.toHaveProperty("bookingReference");
+    expect(stored).not.toHaveProperty("departure");
+  });
+
+  it("moves a transport to another day or Unplanned when its day changes", async () => {
+    const { trip, days } = await setup();
+    const { transport } = await itinerary.createTransport(trip.id, days[0].id, train);
+    await add(trip, days[2].id, "Old town");
+    await itinerary.updateTransport(transport.id, train, days[2].id);
+    expect((await load(trip.id)).days[2].entries.map((entry) => entry.item.id)).toEqual([expect.any(String), transport.id]);
+    await itinerary.updateTransport(transport.id, train, undefined);
+    expect((await load(trip.id)).unplanned.map((entry) => entry.item.id)).toEqual([transport.id]);
+  });
+
+  it("rejects a place and text for the same end, and arrival before departure", async () => {
+    const { trip, days } = await setup();
+    const tashkent = await repos.places.create({ ...city("Tashkent"), tripId: trip.id });
+    await expect(
+      itinerary.createTransport(trip.id, days[0].id, { ...train, originPlaceId: tashkent.id, originText: "Tashkent" }),
+    ).rejects.toThrow();
+    await expect(
+      itinerary.createTransport(trip.id, days[0].id, {
+        ...train,
+        departure: { local: "2026-06-12T10:00", timeZone: "Asia/Tashkent" },
+        arrival: { local: "2026-06-12T09:00", timeZone: "Asia/Tashkent" },
+      }),
+    ).rejects.toThrow();
+    expect(await repos.transports.listByTrip(trip.id)).toEqual([]);
+  });
+
+  it("suggests places of the day only for a day without them", async () => {
+    const { trip, days } = await setup();
+    const tashkent = await repos.places.create({ ...city("Tashkent"), tripId: trip.id });
+    const samarkand = await repos.places.create({ ...city("Samarkand"), tripId: trip.id });
+    const connection = { ...train, originPlaceId: tashkent.id, destinationPlaceId: samarkand.id };
+    const first = await itinerary.createTransport(trip.id, days[1].id, connection);
+    expect(first.suggestedDayPlaces).toEqual([tashkent.id, samarkand.id]);
+    // Nothing is applied automatically.
+    expect(await repos.tripDays.get(days[1].id)).not.toHaveProperty("placeIds");
+
+    await itinerary.setDayPlaces(days[1].id, [samarkand.id]);
+    expect((await itinerary.updateTransport(first.transport.id, connection, days[1].id)).suggestedDayPlaces).toBeUndefined();
+    expect((await itinerary.createTransport(trip.id, undefined, connection)).suggestedDayPlaces).toBeUndefined();
+    expect((await itinerary.createTransport(trip.id, days[2].id, { ...train, originPlaceId: tashkent.id })).suggestedDayPlaces).toBeUndefined();
+  });
+
+  it("deletes a transport, unlinks bookings and removes an emptied outside day", async () => {
+    const { trip, days } = await setup();
+    const { transport } = await itinerary.createTransport(trip.id, days[2].id, train);
+    const booking = await repos.bookings.create({
+      tripId: trip.id,
+      type: "train",
+      title: "Afrosiyob",
+      linkedEntity: { type: "transport", id: transport.id },
+    });
+    await trips.updateTrip(trip.id, { ...tripInput, endDate: "2026-06-13" }, { type: "keep" });
+    expect((await load(trip.id)).outsideDays).toHaveLength(1);
+    await itinerary.deleteTransport(transport.id);
+    expect(await repos.transports.get(transport.id)).toBeUndefined();
+    expect((await repos.bookings.get(booking.id))?.linkedEntity).toBeUndefined();
+    expect(await repos.tripDays.get(days[2].id)).toBeUndefined();
+  });
+});
+
 describe("day details", () => {
   it("sets and clears the title and notes", async () => {
     const { days } = await setup();

@@ -13,9 +13,10 @@ import {
   type GeoJSONSource,
 } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
-import { boundsOf, type MapMarker } from "@/lib/map/mapModel";
+import { boundsOf, type MapMarker, type MapSegment } from "@/lib/map/mapModel";
 import { MAP_STYLE_URL } from "@/lib/map/config";
 import type { LatLng } from "@/lib/domain/coordinates";
+import { TRANSPORT_SYMBOLS, TRANSPORT_TYPE_LABELS } from "@/components/itinerary/transportDisplay";
 import { MARKER_COLORS, ROUTE_LINE_COLOR, UNPLANNED_MARKER_COLOR } from "./markerColors";
 import type { MapViewProps } from "./types";
 
@@ -59,19 +60,61 @@ function markerElement(marker: MapMarker, selected: boolean, onSelect?: (id: str
   return element;
 }
 
-function lineData(line: readonly LatLng[]): GeoJSON.Feature<GeoJSON.LineString> {
+/** Line style per segment: no transport dashed, flights dotted, other transports solid. */
+function segmentStyle(segment: MapSegment): "plain" | "flight" | "ground" {
+  if (segment.transport === undefined) return "plain";
+  return segment.transport.type === "flight" ? "flight" : "ground";
+}
+
+function segmentData(segments: readonly MapSegment[]): GeoJSON.FeatureCollection<GeoJSON.LineString> {
   return {
-    type: "Feature",
-    properties: {},
-    geometry: { type: "LineString", coordinates: line.map((point) => [point.longitude, point.latitude]) },
+    type: "FeatureCollection",
+    features: segments.map((segment) => ({
+      type: "Feature",
+      properties: { style: segmentStyle(segment) },
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [segment.from.longitude, segment.from.latitude],
+          [segment.to.longitude, segment.to.latitude],
+        ],
+      },
+    })),
   };
+}
+
+function transportElement(segment: MapSegment & { transport: NonNullable<MapSegment["transport"]> }, onSelect?: (id: string) => void): HTMLElement {
+  const element = document.createElement(onSelect ? "button" : "div");
+  Object.assign(element.style, {
+    width: "30px",
+    height: "30px",
+    borderRadius: "999px",
+    background: "white",
+    border: `2px solid ${ROUTE_LINE_COLOR}`,
+    font: "15px/26px system-ui, -apple-system, sans-serif",
+    textAlign: "center",
+    boxShadow: "0 1px 4px rgb(0 0 0 / 0.3)",
+    cursor: onSelect ? "pointer" : "default",
+  });
+  element.textContent = TRANSPORT_SYMBOLS[segment.transport.type];
+  element.setAttribute("aria-label", TRANSPORT_TYPE_LABELS[segment.transport.type]);
+  if (onSelect) {
+    element.setAttribute("type", "button");
+    const id = segment.transport.id;
+    element.addEventListener("click", (event) => {
+      event.stopPropagation();
+      onSelect(id);
+    });
+  }
+  return element;
 }
 
 export default function MapLibreMapView({
   markers,
-  line = [],
+  segments = [],
   selectedPlaceId = null,
   onSelectPlace,
+  onSelectTransport,
   fitKey,
   initialCenter,
   interactive = true,
@@ -84,9 +127,11 @@ export default function MapLibreMapView({
   const [tilesFailing, setTilesFailing] = useState(false);
   // Latest callbacks, so map listeners registered once always call the current ones.
   const onSelectRef = useRef(onSelectPlace);
+  const onSelectTransportRef = useRef(onSelectTransport);
   const pickerRef = useRef(picker);
   useEffect(() => {
     onSelectRef.current = onSelectPlace;
+    onSelectTransportRef.current = onSelectTransport;
     pickerRef.current = picker;
   });
 
@@ -166,34 +211,60 @@ export default function MapLibreMapView({
       });
       created.push(pin);
     }
+    // Transport symbols at segment midpoints.
+    for (const segment of segments) {
+      if (segment.transport === undefined) continue;
+      const element = transportElement(
+        { ...segment, transport: segment.transport },
+        onSelectTransport && !picker ? (id) => onSelectTransportRef.current?.(id) : undefined,
+      );
+      created.push(
+        new Marker({ element })
+          .setLngLat([(segment.from.longitude + segment.to.longitude) / 2, (segment.from.latitude + segment.to.latitude) / 2])
+          .addTo(map),
+      );
+    }
     return () => created.forEach((marker) => marker.remove());
-  }, [markers, selectedPlaceId, onSelectPlace, picker, status]);
+  }, [markers, segments, selectedPlaceId, onSelectPlace, onSelectTransport, picker, status]);
 
-  // Connecting line (needs the style).
+  // Connecting segments (need the style): one layer per line style.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || status !== "ready") return;
-    const data = lineData(line.length > 1 ? line : []);
+    const data = segmentData(segments);
     const source = map.getSource<GeoJSONSource>(LINE_SOURCE);
     if (source) {
       source.setData(data);
       return;
     }
     map.addSource(LINE_SOURCE, { type: "geojson", data });
-    map.addLayer({
-      id: LINE_SOURCE,
-      type: "line",
-      source: LINE_SOURCE,
-      layout: { "line-join": "round", "line-cap": "round" },
-      paint: { "line-color": ROUTE_LINE_COLOR, "line-width": 3, "line-opacity": 0.8, "line-dasharray": [2, 1.5] },
-    });
-  }, [line, status]);
+    const styles: [string, number[] | undefined][] = [
+      ["plain", [2, 1.5]],
+      ["flight", [0.1, 2]],
+      ["ground", undefined],
+    ];
+    for (const [style, dash] of styles) {
+      map.addLayer({
+        id: `${LINE_SOURCE}-${style}`,
+        type: "line",
+        source: LINE_SOURCE,
+        filter: ["==", ["get", "style"], style],
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: {
+          "line-color": ROUTE_LINE_COLOR,
+          "line-width": style === "plain" ? 3 : 4,
+          "line-opacity": style === "plain" ? 0.7 : 0.9,
+          ...(dash ? { "line-dasharray": dash } : {}),
+        },
+      });
+    }
+  }, [segments, status]);
 
   // Fit to markers and line whenever fitKey changes.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || fitKey === undefined) return;
-    const bounds = boundsOf([...markers, ...line]);
+    const bounds = boundsOf([...markers, ...segments.flatMap((segment) => [segment.from, segment.to])]);
     if (!bounds) return;
     const { southWest: sw, northEast: ne } = bounds;
     if (sw.latitude === ne.latitude && sw.longitude === ne.longitude) {
@@ -205,9 +276,10 @@ export default function MapLibreMapView({
       maxZoom: 14,
       animate: false,
     });
-    // Only an explicit fitKey change refits; marker updates (e.g. selection) must not.
+    // Only an explicit fitKey change refits (plus once when the map is ready and sized);
+    // marker updates (e.g. selection) must not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fitKey]);
+  }, [fitKey, status === "ready"]);
 
   return (
     <div className={`relative overflow-hidden bg-slate-100 ${className}`}>

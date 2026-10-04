@@ -3,17 +3,22 @@ import {
   addDays,
   calendarDaysInclusive,
   compareCalendarDates,
+  daysBetween,
   durationMinutes,
   eachDateInRange,
   formatCalendarDate,
   formatCalendarDateRange,
+  formatDurationMinutes,
   formatLocalDateTime,
   isCalendarDate,
   isLocalDateTime,
   isLocalDateTimeString,
   isValidTimeZone,
   isWallClockTime,
+  localDatePart,
   localDateTimeToEpochMs,
+  localTimePart,
+  timeZoneOffsetLabel,
 } from "./dateTime";
 
 describe("calendar dates", () => {
@@ -169,5 +174,41 @@ describe("LocalDateTime", () => {
         timeStyle: "short",
       }),
     ).toBe("Jun 12, 2026, 8:00 AM");
+  });
+});
+
+describe("transport helpers", () => {
+  it("splits local date/times", () => {
+    const value = { local: "2026-06-13T23:40", timeZone: "Asia/Tashkent" };
+    expect(localDatePart(value)).toBe("2026-06-13");
+    expect(localTimePart(value)).toBe("23:40");
+  });
+
+  it("counts calendar days between dates", () => {
+    expect(daysBetween("2026-06-13", "2026-06-14")).toBe(1);
+    expect(daysBetween("2026-12-31", "2027-01-01")).toBe(1);
+    expect(daysBetween("2026-06-14", "2026-06-13")).toBe(-1);
+  });
+
+  it("formats durations", () => {
+    expect(formatDurationMinutes(130)).toBe("2 h 10 min");
+    expect(formatDurationMinutes(45)).toBe("45 min");
+    expect(formatDurationMinutes(120)).toBe("2 h");
+  });
+
+  it("labels time zone offsets at a local time", () => {
+    expect(timeZoneOffsetLabel("Asia/Tashkent", { local: "2026-06-13T10:00", timeZone: "Asia/Tashkent" })).toBe("GMT+5");
+    expect(timeZoneOffsetLabel("Europe/Zurich", { local: "2026-01-10T10:00", timeZone: "Europe/Zurich" })).toBe("GMT+1");
+    expect(timeZoneOffsetLabel("Europe/Zurich", { local: "2026-07-10T10:00", timeZone: "Europe/Zurich" })).toBe("GMT+2");
+  });
+
+  it("calculates flight durations across time zones and midnight", () => {
+    // Tashkent (UTC+5) 23:40 → Istanbul (UTC+3) 03:10 next day = 5 h 30 min.
+    expect(
+      durationMinutes(
+        { local: "2026-06-13T23:40", timeZone: "Asia/Tashkent" },
+        { local: "2026-06-14T03:10", timeZone: "Europe/Istanbul" },
+      ),
+    ).toBe(330);
   });
 });

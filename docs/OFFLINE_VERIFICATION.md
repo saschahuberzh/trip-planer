@@ -63,6 +63,13 @@ Use Chrome (DevTools → Application) or Safari.
      for a place without coordinates places it by tapping the map.
    - Offline: the map area says it can't be shown; stops/places with coordinates are
      still listed below; Plan, Places and editing keep working.
+7e. Transport (Phase 7), offline:
+   - In a day: Transport → train from a place to a place with departure/arrival times
+     and time zones → duration is calculated; on a day without places of the day the app
+     offers to set them. The entry appears in the timeline with symbol, times and duration.
+   - An overnight flight shows "+1"; arrival before departure is rejected.
+   - Reorder/move it like an activity; delete it with confirmation.
+   - Online: the Map's route segment between the two places shows the transport symbol.
 8. Open an unknown path (e.g. `/nope`) → "You are offline" page.
 9. Update flow:
    - Go back online, change some visible text, `npm run build && npm run start`.

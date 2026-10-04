@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import type { Activity, Place } from "@/lib/domain/types";
+import type { Activity, Place, Transport } from "@/lib/domain/types";
 import { entryRef, isSortedByTime, type TimelineEntry } from "@/lib/services/itineraryOrdering";
 import { getItineraryService } from "@/lib/services/itineraryService";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/icons";
 import { PLACE_TYPE_LABELS } from "@/components/places/placeDisplay";
 import { entryTimes, entryTitle } from "./itineraryDisplay";
+import { TRANSPORT_SYMBOLS, transportDurationLabel } from "./transportDisplay";
 
 type TimelineListProps = {
   entries: TimelineEntry[];
@@ -24,11 +25,14 @@ type TimelineListProps = {
   /** The day's date when this list is a day (enables "Sort by time"); undefined for Unplanned. */
   sortDate?: { tripDayId: string; date: string };
   emptyState: ReactNode;
-  addLabel?: string;
+  /** Unplanned: "Add idea" instead of "Add activity". */
+  ideas?: boolean;
   onAdd: () => void;
   /** Shows a "Visit a place" action (Day View): an activity linked to a place. */
   onAddPlace?: () => void;
+  onAddTransport: () => void;
   onOpenActivity: (activity: Activity) => void;
+  onOpenTransport: (transport: Transport) => void;
   onMoveEntry: (entry: TimelineEntry) => void;
 };
 
@@ -41,10 +45,12 @@ export function TimelineList({
   places,
   sortDate,
   emptyState,
-  addLabel = "Add activity",
+  ideas = false,
   onAdd,
   onAddPlace,
+  onAddTransport,
   onOpenActivity,
+  onOpenTransport,
   onMoveEntry,
 }: TimelineListProps) {
   const [reordering, setReordering] = useState(false);
@@ -77,26 +83,33 @@ export function TimelineList({
               <EntryRow
                 entry={entry}
                 place={entry.kind === "activity" && entry.item.placeId !== undefined ? places.get(entry.item.placeId) : undefined}
-                onOpen={!editing && entry.kind === "activity" ? () => onOpenActivity(entry.item) : undefined}
+                places={places}
+                onOpen={
+                  editing
+                    ? undefined
+                    : entry.kind === "activity"
+                      ? () => onOpenActivity(entry.item)
+                      : () => onOpenTransport(entry.item)
+                }
                 controls={
                   editing ? (
                     <div className="flex shrink-0 gap-1">
                       <IconButton
-                        label={`Move ${entryTitle(entry)} up`}
+                        label={`Move ${entryTitle(entry, places)} up`}
                         disabled={busy || index === 0}
                         onClick={() => void run(() => getItineraryService().shiftEntry(entryRef(entry), -1))}
                       >
                         <ArrowUpIcon />
                       </IconButton>
                       <IconButton
-                        label={`Move ${entryTitle(entry)} down`}
+                        label={`Move ${entryTitle(entry, places)} down`}
                         disabled={busy || index === entries.length - 1}
                         onClick={() => void run(() => getItineraryService().shiftEntry(entryRef(entry), 1))}
                       >
                         <ArrowDownIcon />
                       </IconButton>
                       <IconButton
-                        label={`Move ${entryTitle(entry)} to another day`}
+                        label={`Move ${entryTitle(entry, places)} to another day`}
                         disabled={busy}
                         onClick={() => onMoveEntry(entry)}
                       >
@@ -137,21 +150,21 @@ export function TimelineList({
           </>
         ) : (
           <>
-            <Button variant="ghost" onClick={onAdd} className="flex-1 text-teal-700">
+            <FooterButton label={ideas ? "Add idea" : "Add activity"} text={ideas ? "Idea" : "Activity"} onClick={onAdd}>
               <PlusIcon />
-              {addLabel}
-            </Button>
+            </FooterButton>
             {onAddPlace && (
-              <Button variant="ghost" onClick={onAddPlace} className="flex-1 px-2 text-teal-700">
+              <FooterButton label="Visit a place" text="Place" onClick={onAddPlace}>
                 <MapPinIcon />
-                Visit a place
-              </Button>
+              </FooterButton>
             )}
+            <FooterButton label="Add transport" text="Transport" onClick={onAddTransport}>
+              <TrainIcon />
+            </FooterButton>
             {entries.length > 0 && (
-              <Button variant="ghost" onClick={() => setReordering(true)} className="flex-1">
+              <FooterButton label="Reorder" text="Reorder" onClick={() => setReordering(true)} muted>
                 <ReorderIcon />
-                Reorder
-              </Button>
+              </FooterButton>
             )}
           </>
         )}
@@ -160,18 +173,49 @@ export function TimelineList({
   );
 }
 
+function FooterButton({
+  label,
+  text,
+  onClick,
+  muted = false,
+  children,
+}: {
+  label: string;
+  text: string;
+  onClick: () => void;
+  muted?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-xs font-semibold hover:bg-slate-100 ${
+        muted ? "text-slate-700" : "text-teal-700"
+      }`}
+    >
+      {children}
+      {text}
+    </button>
+  );
+}
+
 function EntryRow({
   entry,
   place,
+  places,
   onOpen,
   controls,
 }: {
   entry: TimelineEntry;
   place?: Place;
+  places: ReadonlyMap<string, Place>;
   onOpen?: () => void;
   controls: ReactNode;
 }) {
-  const { start, end } = entryTimes(entry);
+  const { start, end, arrivalDays } = entryTimes(entry);
+  const duration = entry.kind === "transport" ? transportDurationLabel(entry.item) : undefined;
   const notes = entry.item.notes;
   const content = (
     <>
@@ -179,7 +223,12 @@ function EntryRow({
         {start !== undefined ? (
           <>
             <span className="block text-sm font-semibold text-slate-900">{start}</span>
-            {end !== undefined && <span className="block text-xs text-slate-500">{end}</span>}
+            {end !== undefined && (
+              <span className="block text-xs text-slate-500">
+                {end}
+                {arrivalDays > 0 && <span className="font-semibold text-amber-700"> +{arrivalDays}</span>}
+              </span>
+            )}
           </>
         ) : (
           <span className="block text-xs font-medium text-slate-400">No time</span>
@@ -187,14 +236,29 @@ function EntryRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 font-medium text-slate-900">
-          {entry.kind === "transport" && <TrainIcon className="size-4 shrink-0 text-slate-500" />}
-          <span className="truncate">{entryTitle(entry)}</span>
+          {entry.kind === "transport" && (
+            <span aria-hidden="true" className="shrink-0">
+              {TRANSPORT_SYMBOLS[entry.item.type]}
+            </span>
+          )}
+          <span className="truncate">{entryTitle(entry, places)}</span>
         </span>
+        {(duration !== undefined || arrivalDays > 0 || (entry.kind === "transport" && entry.item.bookingReference)) && (
+          <span className="mt-0.5 block truncate text-sm text-slate-600">
+            {[
+              duration,
+              arrivalDays > 0 ? `arrives +${arrivalDays} ${arrivalDays === 1 ? "day" : "days"}` : undefined,
+              entry.kind === "transport" && entry.item.bookingReference ? `Ref ${entry.item.bookingReference}` : undefined,
+            ]
+              .filter((part) => part !== undefined)
+              .join(" · ")}
+          </span>
+        )}
         {place !== undefined && (
           <span className="mt-0.5 flex items-center gap-1 text-sm text-teal-800">
             <MapPinIcon className="size-3.5 shrink-0" />
             <span className="truncate">
-              {place.name === entryTitle(entry) ? PLACE_TYPE_LABELS[place.type] : place.name}
+              {place.name === entryTitle(entry, places) ? PLACE_TYPE_LABELS[place.type] : place.name}
             </span>
           </span>
         )}

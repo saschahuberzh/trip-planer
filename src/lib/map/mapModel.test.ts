@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Activity, Place, Trip, TripDay } from "@/lib/domain/types";
+import type { Activity, Place, Transport, Trip, TripDay } from "@/lib/domain/types";
 import type { TimelineEntry } from "@/lib/services/itineraryOrdering";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
 import { allPlacesModel, boundsOf, dayModel, formatDayRanges, placeDayNumbers, routeModel } from "./mapModel";
@@ -23,6 +23,13 @@ function activity(id: string, placeId: string | undefined, sortOrder: number): T
   const item: Activity = { id, tripId: "t", tripDayId: "d", title: id, sortOrder, ...meta };
   if (placeId) item.placeId = placeId;
   return { kind: "activity", item };
+}
+
+function transport(id: string, from: string | undefined, to: string | undefined, type: Transport["type"] = "train"): TimelineEntry {
+  const item: Transport = { id, tripId: "t", tripDayId: "d", type, sortOrder: 0, ...meta };
+  if (from) item.originPlaceId = from;
+  if (to) item.destinationPlaceId = to;
+  return { kind: "transport", item };
 }
 
 function day(n: number, placeIds?: string[], entries: TimelineEntry[] = [], outside = false): DayTimeline {
@@ -80,7 +87,8 @@ describe("routeModel", () => {
       [3, "Bukhara", [6]],
       [4, "Tashkent", [7]],
     ]);
-    expect(model.line).toHaveLength(4);
+    expect(model.segments).toHaveLength(3);
+    expect(model.segments.every((segment) => segment.transport === undefined)).toBe(true);
     // One marker per place, with all its stop numbers.
     expect(model.markers.map((marker) => [marker.placeId, marker.label])).toEqual([
       ["Tashkent", "1, 4"],
@@ -99,7 +107,7 @@ describe("routeModel", () => {
   it("ignores days outside the trip dates and is empty without places of the day", () => {
     expect(routeModel(itinerary([day(1)], [day(9, ["Bukhara"], [], true)]))).toEqual({
       markers: [],
-      line: [],
+      segments: [],
       stops: [],
       unlocated: [],
     });
@@ -120,7 +128,7 @@ describe("dayModel", () => {
       [3, "Cafe"],
     ]);
     expect(model.unlocated.map((p) => p.id)).toEqual(["Secret"]);
-    expect(model.line).toHaveLength(3);
+    expect(model.segments).toHaveLength(2);
   });
 
   it("merges a directly repeated place but keeps later revisits", () => {
@@ -156,7 +164,7 @@ describe("allPlacesModel", () => {
       ["Tashkent", "1", "planned"],
     ]);
     expect(allPlacesModel(trip).unlocated.map((p) => p.id)).toEqual(["Secret"]);
-    expect(allPlacesModel(trip).line).toEqual([]);
+    expect(allPlacesModel(trip).segments).toEqual([]);
   });
 
   it("filters by day and category", () => {
@@ -184,5 +192,59 @@ describe("helpers", () => {
         { latitude: 39.6, longitude: 64.4 },
       ]),
     ).toEqual({ southWest: { latitude: 39.6, longitude: 64.4 }, northEast: { latitude: 41.3, longitude: 69.2 } });
+  });
+});
+
+describe("transport connections", () => {
+  it("labels route segments that a transport connects on a day between the stops", () => {
+    const model = routeModel(
+      itinerary([
+        day(1, ["Tashkent"]),
+        day(2, ["Tashkent", "Samarkand"], [transport("train", "Tashkent", "Samarkand")]),
+        day(3, ["Samarkand"]),
+        day(4, ["Bukhara"]),
+      ]),
+    );
+    expect(model.segments.map((segment) => segment.transport)).toEqual([{ id: "train", type: "train" }, undefined]);
+  });
+
+  it("ignores transports in the wrong direction or on unrelated days", () => {
+    const model = routeModel(
+      itinerary([
+        day(1, ["Tashkent"], [transport("back", "Samarkand", "Tashkent")]),
+        day(2, ["Samarkand"]),
+        day(3, ["Bukhara"]),
+        day(4, ["Bukhara"], [transport("late", "Samarkand", "Bukhara", "bus")]),
+      ]),
+    );
+    expect(model.segments.map((segment) => segment.transport)).toEqual([undefined, undefined]);
+  });
+
+  it("puts transport origin and destination into the day sequence at their timeline position", () => {
+    const model = dayModel(
+      itinerary([
+        day(2, ["Tashkent", "Samarkand"], [
+          activity("breakfast", "Cafe", 0),
+          transport("flight", "Tashkent", "Samarkand", "flight"),
+          activity("sights", "Registan", 2),
+        ]),
+      ]),
+      "d2",
+    );
+    // Tashkent is covered by the timeline only after Cafe, so it isn't put in front.
+    expect(model.stops.map((stop) => stop.place.id)).toEqual(["Cafe", "Tashkent", "Samarkand", "Registan"]);
+    expect(model.segments.map((segment) => segment.transport?.type)).toEqual([undefined, "flight", undefined]);
+  });
+
+  it("puts uncovered places of the day in front of the timeline", () => {
+    const model = dayModel(itinerary([day(3, ["Tashkent", "Samarkand"], [activity("a", "Registan", 0)])]), "d3");
+    expect(model.stops.map((stop) => stop.place.id)).toEqual(["Tashkent", "Samarkand", "Registan"]);
+  });
+
+  it("does not label a segment when the transport's origin has no position", () => {
+    const model = dayModel(itinerary([day(1, [], [transport("bus", "Secret", "Samarkand", "bus")])]), "d1");
+    expect(model.stops.map((stop) => stop.place.id)).toEqual(["Samarkand"]);
+    expect(model.segments).toEqual([]);
+    expect(model.unlocated.map((place) => place.id)).toEqual(["Secret"]);
   });
 });

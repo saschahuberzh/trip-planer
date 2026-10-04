@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { formatCoordinates } from "@/lib/domain/coordinates";
-import { PLACE_TYPES, type Place, type PlaceType } from "@/lib/domain/types";
+import { PLACE_TYPES, type Place, type PlaceType, type Transport } from "@/lib/domain/types";
 import { useItinerary } from "@/lib/hooks/useItinerary";
 import {
   allPlacesModel,
@@ -26,6 +26,13 @@ import { inputClass } from "@/components/trips/formFields";
 import { dayOptionLabel } from "@/components/itinerary/itineraryDisplay";
 import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "@/components/itinerary/PlanScreen";
 import { PLACE_TYPE_BADGE, PLACE_TYPE_LABELS } from "@/components/places/placeDisplay";
+import { TransportSheet } from "@/components/itinerary/TransportSheet";
+import {
+  TRANSPORT_SYMBOLS,
+  transportDurationLabel,
+  transportTimes,
+  transportTitle,
+} from "@/components/itinerary/transportDisplay";
 import { MapPickerSheet } from "./MapPickerSheet";
 import { MapView } from "./MapView";
 
@@ -74,6 +81,16 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
   const { trip, days, outsideDays, places } = itinerary;
   const [state, setState] = useState<MapState>(() => initialState(days));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedTransportId, setSelectedTransportId] = useState<string | null>(null);
+  const [editingTransport, setEditingTransport] = useState<Transport | null>(null);
+  const selectPlace = useCallback((id: string | null) => {
+    setSelectedId(id);
+    setSelectedTransportId(null);
+  }, []);
+  const selectTransport = useCallback((id: string) => {
+    setSelectedTransportId(id);
+    setSelectedId(null);
+  }, []);
   const [fitRequest, setFitRequest] = useState(0);
   const [locating, setLocating] = useState<Place | null>(null);
   const dayChoices = [...days, ...outsideDays.filter((timeline) => timeline.day.id === state.dayId)];
@@ -82,6 +99,7 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
     const next = { ...state, ...change };
     setState(next);
     setSelectedId(null);
+    setSelectedTransportId(null);
     const params = new URLSearchParams({ view: next.view });
     if (next.dayId !== undefined && next.view !== "route") params.set("day", next.dayId);
     window.history.replaceState(window.history.state, "", `?${params.toString()}`);
@@ -95,6 +113,7 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
 
   const daysByPlace = useMemo(() => placeDayNumbers(itinerary), [itinerary]);
   const selected = selectedId === null ? undefined : places.get(selectedId);
+  const selectedTransport = selectedTransportId === null ? undefined : findTransport([...days, ...outsideDays], selectedTransportId);
   const fitKey = `${state.view}|${state.dayId ?? ""}|${state.type ?? ""}|${fitRequest}`;
   const allLocated = [...places.values()].filter(isLocated);
 
@@ -151,9 +170,10 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
       <div className="relative">
         <MapView
           markers={model.markers}
-          line={model.line}
+          segments={model.segments}
           selectedPlaceId={selectedId}
-          onSelectPlace={setSelectedId}
+          onSelectPlace={selectPlace}
+          onSelectTransport={selectTransport}
           fitKey={fitKey}
           initialCenter={placesCenter(allLocated)}
           className="h-[55dvh] min-h-72 rounded-3xl ring-1 ring-slate-200"
@@ -178,6 +198,16 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
         />
       )}
 
+      {selectedTransport !== undefined && (
+        <SelectedTransport
+          transport={selectedTransport.transport}
+          timeline={selectedTransport.timeline}
+          places={places}
+          onEdit={() => setEditingTransport(selectedTransport.transport)}
+          onClose={() => setSelectedTransportId(null)}
+        />
+      )}
+
       <ViewEmptyState view={state.view} model={model} tripId={trip.id} hasPlaces={places.size > 0} />
 
       {model.stops.length > 0 && (
@@ -186,7 +216,7 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
             <li key={`${stop.number}-${stop.place.id}`}>
               <button
                 type="button"
-                onClick={() => setSelectedId(stop.place.id)}
+                onClick={() => selectPlace(stop.place.id)}
                 className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
               >
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-700 text-xs font-semibold text-white">
@@ -211,7 +241,7 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
             <li key={marker.placeId}>
               <button
                 type="button"
-                onClick={() => setSelectedId(marker.placeId)}
+                onClick={() => selectPlace(marker.placeId)}
                 className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
               >
                 <span className="min-w-0 flex-1">
@@ -260,6 +290,12 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
         }}
         onClose={() => setLocating(null)}
       />
+
+      <TransportSheet
+        itinerary={itinerary}
+        target={editingTransport === null ? null : { mode: "edit", transport: editingTransport }}
+        onClose={() => setEditingTransport(null)}
+      />
     </section>
   );
 }
@@ -295,6 +331,69 @@ function SelectedPlace({ tripId, place, days, onClose }: { tripId: string; place
       </button>
     </div>
   );
+}
+
+function SelectedTransport({
+  transport,
+  timeline,
+  places,
+  onEdit,
+  onClose,
+}: {
+  transport: Transport;
+  timeline: DayTimeline;
+  places: ReadonlyMap<string, Place>;
+  onEdit: () => void;
+  onClose: () => void;
+}) {
+  const { start, end, arrivalDays } = transportTimes(transport);
+  const duration = transportDurationLabel(transport);
+  const times = [
+    start === undefined ? undefined : `${start} ${transport.departure ? timeZoneCity(transport.departure.timeZone) : ""}`.trim(),
+    end === undefined ? undefined : `${end}${arrivalDays > 0 ? ` (+${arrivalDays})` : ""} ${transport.arrival ? timeZoneCity(transport.arrival.timeZone) : ""}`.trim(),
+  ].filter((part) => part !== undefined);
+  return (
+    <div className="flex gap-3 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200" aria-live="polite">
+      <span aria-hidden="true" className="text-2xl">
+        {TRANSPORT_SYMBOLS[transport.type]}
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2 className="truncate text-lg font-semibold text-slate-900">{transportTitle(transport, places)}</h2>
+        <p className="text-sm text-slate-600">{dayOptionLabel(timeline, places)}</p>
+        {times.length > 0 && <p className="text-sm text-slate-600">{times.join(" → ")}</p>}
+        <p className="text-sm text-slate-500">
+          {[duration, transport.bookingReference ? `Ref ${transport.bookingReference}` : undefined]
+            .filter((part) => part !== undefined)
+            .join(" · ")}
+        </p>
+        <Button variant="secondary" onClick={onEdit} className="mt-2">
+          Edit transport
+        </Button>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close transport details"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+      >
+        <CloseIcon />
+      </button>
+    </div>
+  );
+}
+
+function findTransport(timelines: DayTimeline[], id: string): { transport: Transport; timeline: DayTimeline } | undefined {
+  for (const timeline of timelines) {
+    for (const entry of timeline.entries) {
+      if (entry.kind === "transport" && entry.item.id === id) return { transport: entry.item, timeline };
+    }
+  }
+  return undefined;
+}
+
+/** "Asia/Tashkent" → "Tashkent" (times are local to that zone). */
+function timeZoneCity(timeZone: string): string {
+  return timeZone.split("/").at(-1)?.replace(/_/g, " ") ?? timeZone;
 }
 
 function ViewEmptyState({ view, model, tripId, hasPlaces }: { view: MapViewMode; model: MapModel; tripId: string; hasPlaces: boolean }) {

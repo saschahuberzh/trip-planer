@@ -5,6 +5,7 @@
 import { isCurrencyCode } from "./currency";
 import {
   compareCalendarDates,
+  durationMinutes,
   isCalendarDate,
   isLocalDateTime,
   isWallClockTime,
@@ -213,8 +214,19 @@ export function assertValidTransport(transport: Transport): void {
   c.optionalText(transport.destinationPlaceId, "destinationPlaceId");
   c.optionalText(transport.originText, "originText");
   c.optionalText(transport.destinationText, "destinationText");
+  c.check(
+    transport.originPlaceId === undefined || transport.originText === undefined,
+    "origin is either a place or text, not both",
+  );
+  c.check(
+    transport.destinationPlaceId === undefined || transport.destinationText === undefined,
+    "destination is either a place or text, not both",
+  );
   c.localDateTime(transport.departure, "departure");
   c.localDateTime(transport.arrival, "arrival");
+  if (isLocalDateTime(transport.departure) && isLocalDateTime(transport.arrival)) {
+    c.check(durationMinutes(transport.departure, transport.arrival) >= 0, "arrival must not be before departure");
+  }
   if (transport.durationMinutes !== undefined) {
     c.check(
       Number.isInteger(transport.durationMinutes) && transport.durationMinutes > 0,

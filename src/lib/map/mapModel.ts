@@ -3,7 +3,7 @@
  * markers, the connecting line, the numbered stop list and places without coordinates.
  */
 import type { LatLng } from "@/lib/domain/coordinates";
-import type { Place, PlaceType } from "@/lib/domain/types";
+import type { Place, PlaceType, Transport, TransportType } from "@/lib/domain/types";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
 
 export const MAP_VIEW_MODES = ["route", "day", "all"] as const;
@@ -21,6 +21,13 @@ export interface MapMarker extends LatLng {
   tone: "planned" | "unplanned";
 }
 
+/** A straight segment between two consecutive stops; `transport` when a transport connects them. */
+export interface MapSegment {
+  from: LatLng;
+  to: LatLng;
+  transport?: { id: string; type: TransportType };
+}
+
 export interface MapStop {
   /** 1-based position along the line. */
   number: number;
@@ -31,8 +38,8 @@ export interface MapStop {
 
 export interface MapModel {
   markers: MapMarker[];
-  /** Points of the connecting line, in order (may be empty). */
-  line: LatLng[];
+  /** Segments between consecutive stops, in order (may be empty). */
+  segments: MapSegment[];
   /** Numbered stops (route and day views), in order. */
   stops: MapStop[];
   /** Places relevant to the view that have no coordinates ("not on map"). */
@@ -59,8 +66,13 @@ function unique<T>(items: Iterable<T>): T[] {
   return [...new Set(items)];
 }
 
-/** Turns an ordered list of stops into markers (one per place, all its numbers) and a line. */
-function fromStops(stops: MapStop[], unlocated: Place[]): MapModel {
+const toLatLng = (place: LocatedPlace): LatLng => ({ latitude: place.latitude, longitude: place.longitude });
+
+/**
+ * Turns an ordered list of stops into markers (one per place, all its numbers) and segments.
+ * `connectionInto(i)` returns the transport arriving at stop i from stop i - 1, if any.
+ */
+function fromStops(stops: MapStop[], unlocated: Place[], connectionInto: (index: number) => Transport | undefined): MapModel {
   const byPlace = new Map<string, MapMarker>();
   for (const stop of stops) {
     const existing = byPlace.get(stop.place.id);
@@ -78,12 +90,23 @@ function fromStops(stops: MapStop[], unlocated: Place[]): MapModel {
       tone: "planned",
     });
   }
-  return {
-    markers: [...byPlace.values()],
-    line: stops.map(({ place }) => ({ latitude: place.latitude, longitude: place.longitude })),
-    stops,
-    unlocated,
-  };
+  const segments = stops.slice(1).map((stop, i): MapSegment => {
+    const transport = connectionInto(i + 1);
+    return {
+      from: toLatLng(stops[i].place),
+      to: toLatLng(stop.place),
+      ...(transport ? { transport: { id: transport.id, type: transport.type } } : {}),
+    };
+  });
+  return { markers: [...byPlace.values()], segments, stops, unlocated };
+}
+
+/** Transports of days within the trip dates, with their day number. */
+function datedTransports(itinerary: Itinerary): { transport: Transport; dayNumber: number }[] {
+  return itinerary.days.flatMap(({ dayNumber, entries }) => {
+    if (dayNumber === null) return [];
+    return entries.flatMap((entry) => (entry.kind === "transport" ? [{ transport: entry.item, dayNumber }] : []));
+  });
 }
 
 /**
@@ -111,36 +134,86 @@ export function routeModel(itinerary: Itinerary): MapModel {
       stops.push({ number: stops.length + 1, place, dayNumbers: dayNumber === null ? [] : [dayNumber] });
     }
   }
-  return fromStops(stops, [...unlocated.values()]);
+  // A segment shows a transport going from its first to its second stop on a day between them.
+  const transports = datedTransports(itinerary);
+  return fromStops(stops, [...unlocated.values()], (index) => {
+    const from = stops[index - 1];
+    const to = stops[index];
+    const earliest = Math.max(...from.dayNumbers);
+    const latest = Math.min(...to.dayNumbers);
+    return transports.find(
+      ({ transport, dayNumber }) =>
+        transport.originPlaceId === from.place.id &&
+        transport.destinationPlaceId === to.place.id &&
+        dayNumber >= earliest &&
+        dayNumber <= latest,
+    )?.transport;
+  });
 }
 
-/** Places of a day in order: places of the day first, then activity places in timeline order. */
-export function dayPlaceSequence(timeline: DayTimeline, places: ReadonlyMap<string, Place>): Place[] {
-  const ids = [
-    ...(timeline.day.placeIds ?? []),
-    ...timeline.entries.flatMap((entry) =>
-      entry.kind === "activity" && entry.item.placeId !== undefined ? [entry.item.placeId] : [],
-    ),
-  ];
-  const sequence: Place[] = [];
-  for (const id of ids) {
-    const place = places.get(id);
-    // A place repeated directly (e.g. the city of the day, then an activity there) is one stop.
-    if (place !== undefined && sequence.at(-1)?.id !== place.id) sequence.push(place);
+/** One place visited during a day; `arrivedBy` when reached by a transport from the previous node. */
+export interface DayNode {
+  place: Place;
+  arrivedBy?: Transport;
+}
+
+/**
+ * A day's places in order. The timeline gives the order: activity places, and for transports
+ * their origin and destination. Places of the day that come before the timeline's first
+ * known place are put in front (e.g. "Samarkand", then the sights of the day); with an empty
+ * timeline the places of the day are the sequence. Directly repeated places are one node.
+ */
+export function dayPlaceNodes(timeline: DayTimeline, places: ReadonlyMap<string, Place>): DayNode[] {
+  const timelineNodes: DayNode[] = [];
+  for (const entry of timeline.entries) {
+    if (entry.kind === "activity") {
+      const place = entry.item.placeId === undefined ? undefined : places.get(entry.item.placeId);
+      if (place) timelineNodes.push({ place });
+      continue;
+    }
+    const origin = entry.item.originPlaceId === undefined ? undefined : places.get(entry.item.originPlaceId);
+    const destination = entry.item.destinationPlaceId === undefined ? undefined : places.get(entry.item.destinationPlaceId);
+    if (origin) timelineNodes.push({ place: origin });
+    if (destination) timelineNodes.push({ place: destination, ...(origin ? { arrivedBy: entry.item } : {}) });
   }
-  return sequence;
+
+  const dayPlaces = (timeline.day.placeIds ?? []).flatMap((id) => {
+    const place = places.get(id);
+    return place ? [place] : [];
+  });
+  const timelineIds = new Set(timelineNodes.map((node) => node.place.id));
+  const firstCovered = dayPlaces.findIndex((place) => timelineIds.has(place.id));
+  const prefix = (firstCovered === -1 ? dayPlaces : dayPlaces.slice(0, firstCovered)).map((place): DayNode => ({ place }));
+
+  const nodes: DayNode[] = [];
+  for (const node of [...prefix, ...timelineNodes]) {
+    const previous = nodes.at(-1);
+    if (previous?.place.id === node.place.id) continue;
+    nodes.push(node);
+  }
+  return nodes;
 }
 
-/** Day view: one day's places, numbered in order and connected. */
+/** A day's places in order (see dayPlaceNodes). */
+export function dayPlaceSequence(timeline: DayTimeline, places: ReadonlyMap<string, Place>): Place[] {
+  return dayPlaceNodes(timeline, places).map((node) => node.place);
+}
+
+/** Day view: one day's places, numbered in order and connected; transports label their segment. */
 export function dayModel(itinerary: Itinerary, tripDayId: string): MapModel {
   const timeline = [...itinerary.days, ...itinerary.outsideDays].find((candidate) => candidate.day.id === tripDayId);
-  if (timeline === undefined) return { markers: [], line: [], stops: [], unlocated: [] };
-  const sequence = dayPlaceSequence(timeline, itinerary.places);
-  const located = sequence.filter(isLocated);
+  if (timeline === undefined) return { markers: [], segments: [], stops: [], unlocated: [] };
+  const nodes = dayPlaceNodes(timeline, itinerary.places);
+  const located = nodes.filter((node): node is DayNode & { place: LocatedPlace } => isLocated(node.place));
   const dayNumbers = timeline.dayNumber === null ? [] : [timeline.dayNumber];
   return fromStops(
-    located.map((place, index) => ({ number: index + 1, place, dayNumbers })),
-    unique(sequence.filter((place) => !isLocated(place))),
+    located.map((node, index) => ({ number: index + 1, place: node.place, dayNumbers })),
+    unique(nodes.map((node) => node.place).filter((place) => !isLocated(place))),
+    (index) => {
+      const transport = located[index].arrivedBy;
+      // Only when the previous stop shown is really where the transport left from.
+      return transport?.originPlaceId === located[index - 1].place.id ? transport : undefined;
+    },
   );
 }
 
@@ -190,7 +263,7 @@ export function allPlacesModel(itinerary: Itinerary, filter: AllPlacesFilter = {
       tone: days.length > 0 ? "planned" : "unplanned",
     };
   });
-  return { markers, line: [], stops: [], unlocated: places.filter((place) => !isLocated(place)) };
+  return { markers, segments: [], stops: [], unlocated: places.filter((place) => !isLocated(place)) };
 }
 
 /** South-west and north-east corners of the points, or undefined when there are none. */
