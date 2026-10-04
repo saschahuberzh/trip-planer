@@ -82,7 +82,7 @@ export function TripsScreen() {
         trip={dialog?.type === "edit" ? dialog.trip : undefined}
         defaultBaseCurrency={data.status === "ready" ? data.data.suggestedCurrency : DEFAULT_BASE_CURRENCY}
         onSaved={(saved) => {
-          if (dialog?.type === "create") router.push(appRoutePath({ name: "trip-overview", tripId: saved.id }));
+          if (dialog?.type === "create") router.push(appRoutePath({ name: "trip-section", tripId: saved.id, section: "plan" }));
         }}
       />
 
@@ -92,7 +92,7 @@ export function TripsScreen() {
             <ActionItem
               icon={<ChevronRightIcon />}
               label="Open trip"
-              onClick={() => router.push(appRoutePath({ name: "trip-overview", tripId: dialog.trip.id }))}
+              onClick={() => router.push(appRoutePath({ name: "trip-section", tripId: dialog.trip.id, section: "plan" }))}
             />
             <ActionItem icon={<PencilIcon />} label="Edit trip" onClick={() => setDialog({ type: "edit", trip: dialog.trip })} />
             <ActionItem

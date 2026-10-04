@@ -30,7 +30,7 @@ export interface TripFields {
   end: string;
 }
 
-/** Creates a trip from the Trips screen and returns its path (e.g. /trips/<id>). */
+/** Creates a trip from the Trips screen (which opens its plan) and returns its path (e.g. /trips/<id>). */
 export async function createTrip(page: Page, { name, start, end }: TripFields): Promise<string> {
   await page.goto("/");
   await page.getByRole("button", { name: /Create a trip|New trip/ }).first().tap();
@@ -38,8 +38,8 @@ export async function createTrip(page: Page, { name, start, end }: TripFields): 
   await sheet(page).getByLabel("Start").fill(start);
   await sheet(page).getByLabel("End").fill(end);
   await sheet(page).getByRole("button", { name: "Create trip" }).tap();
-  await page.waitForURL(/\/trips\/[0-9a-f-]{36}$/);
-  return new URL(page.url()).pathname;
+  await page.waitForURL(/\/trips\/[0-9a-f-]{36}\/plan$/);
+  return new URL(page.url()).pathname.replace(/\/plan$/, "");
 }
 
 /** Adds an activity to the first day card of the Plan screen. */

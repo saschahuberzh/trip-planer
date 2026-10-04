@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { calendarDaysInclusive, deviceToday } from "@/lib/domain/dateTime";
 import type { Booking, Expense, Trip } from "@/lib/domain/types";
 import { useItinerary } from "@/lib/hooks/useItinerary";
 import { useLiveData } from "@/lib/hooks/useLiveData";
-import { appRoutePath } from "@/lib/routing/routes";
 import { budgetOverview, isConverted, type BudgetOverview, type ExpenseTotals } from "@/lib/services/budget";
 import { getBookingService } from "@/lib/services/bookingService";
 import { getExpenseService } from "@/lib/services/expenseService";
@@ -16,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { AlertIcon, PlusIcon } from "@/components/ui/icons";
 import { formatDayDate } from "@/components/itinerary/itineraryDisplay";
 import { formatMoney } from "@/components/trips/tripDisplay";
+import { TripFormSheet } from "@/components/trips/TripFormSheet";
 import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_SYMBOLS, formatUnconverted } from "./budgetDisplay";
 import { ExpenseSheet, type ExpenseSheetTarget } from "./ExpenseSheet";
 import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
@@ -167,6 +166,7 @@ function BudgetContent({ itinerary, expenses, bookings }: { itinerary: Itinerary
 }
 
 function Overview({ trip, overview, onShowUnconverted }: { trip: Trip; overview: BudgetOverview; onShowUnconverted: () => void }) {
+  const [editingTrip, setEditingTrip] = useState(false);
   const base = trip.baseCurrency;
   const { paid, planned, total } = overview.totals;
   const remaining = overview.remaining;
@@ -178,9 +178,9 @@ function Overview({ trip, overview, onShowUnconverted }: { trip: Trip; overview:
         {overview.budgetAmount !== undefined ? (
           <span className="text-lg font-semibold text-slate-900">{formatMoney(overview.budgetAmount, base)}</span>
         ) : (
-          <Link href={appRoutePath({ name: "trip-overview", tripId: trip.id })} className="text-sm font-semibold text-teal-700">
-            No budget set
-          </Link>
+          <button type="button" onClick={() => setEditingTrip(true)} className="min-h-11 text-sm font-semibold text-teal-700">
+            Set a budget
+          </button>
         )}
       </div>
 
@@ -232,6 +232,7 @@ function Overview({ trip, overview, onShowUnconverted }: { trip: Trip; overview:
           </span>
         </button>
       )}
+      <TripFormSheet open={editingTrip} onClose={() => setEditingTrip(false)} trip={trip} />
     </div>
   );
 }

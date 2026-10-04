@@ -24,8 +24,9 @@ test("trips stay available and editable offline; offline trips open in every sec
   await app.goto(`${tripPath}/plan`);
   await expect(app.locator("article").first()).toContainText("Registan");
 
-  // 7. The trip can still be edited.
+  // 7. The trip can still be edited. Old trip links open the plan.
   await app.goto(tripPath);
+  await app.waitForURL(`**${tripPath}/plan`);
   await app.getByRole("button", { name: "Edit trip" }).tap();
   await sheet(app).getByLabel("Trip name").fill("Silk Road 2027");
   await sheet(app).getByRole("button", { name: "Save changes" }).tap();

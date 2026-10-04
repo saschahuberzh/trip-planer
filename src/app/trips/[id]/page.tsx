@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { TripOverview } from "@/components/trips/TripOverview";
+import { OpenTripPlan } from "@/components/trips/OpenTripPlan";
 
-export const metadata: Metadata = { title: "Overview" };
+export const metadata: Metadata = { title: "Trip" };
 
 export default function Page() {
-  return <TripOverview />;
+  return <OpenTripPlan />;
 }

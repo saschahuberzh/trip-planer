@@ -12,13 +12,13 @@ Routes are defined in TECH_STACK.md.
 
 # 0. Global Navigation
 
-Always reachable (e.g. bottom bar on mobile, sidebar on desktop):
+Always reachable (bottom bar with icons on phones, sidebar with icons and labels on large screens):
 
 - Trips (`/`)
 - Countries (`/countries`)
 - Settings (`/settings`)
 
-Inside a trip, the trip section navigation is shown in addition (see Trip Overview).
+Inside a trip, the trip header and section navigation are shown in addition (see Trip Header).
 
 Global UI elements:
 
@@ -49,9 +49,10 @@ Trip card:
 
 Actions:
 
-- open
-- edit
-- delete
+- open (tap the card): opens the trip's Plan
+- edit, delete (actions menu on the card)
+
+After creating a trip, its Plan opens.
 
 ---
 
@@ -78,30 +79,20 @@ before saving that these days will be kept and shown as "outside trip dates".
 
 ---
 
-# 3. Trip Overview
+# 3. Trip Header
 
-Header:
+There is no separate trip overview screen: a trip opens with its Plan, and `/trips/<id>`
+redirects there (old links keep working, also offline).
 
-- trip name
-- countries
-- dates
+Shown on every trip screen:
 
-Navigation:
+- trip name, countries, dates
+- edit trip button (opens Create / Edit Trip)
+- section navigation: Plan, Map, Places, Budget, Accommodation, Bookings
+  (scrollable tab bar on phones; all sections visible on large screens)
 
-- Plan
-- Map
-- Places
-- Budget
-- Accommodation
-- Bookings
-
-On mobile, six sections may require a scrollable tab bar or a "More" entry; keep all reachable in one tap from the overview.
-
-Actions:
-
-- edit trip
-- delete trip (confirmation lists what will be deleted)
-
+Back to the trips list is in the global navigation. Deleting a trip is in the trips list
+(confirmation lists what will be deleted). Trip notes are shown at the top of the Plan.
 Trip-only export is not part of V1. Full export is available in Settings.
 
 ---

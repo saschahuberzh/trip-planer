@@ -47,6 +47,14 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
     <section className="mx-auto max-w-md space-y-4 px-4 py-5 lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-6 lg:space-y-0 lg:px-8 lg:py-8">
       {/* Large screens: days on the left, Unplanned fixed on the right. */}
       <div className="space-y-4">
+        {trip.notes !== undefined && (
+          <section aria-labelledby="trip-notes-heading" className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <h2 id="trip-notes-heading" className="text-sm font-semibold text-slate-500">
+              Trip notes
+            </h2>
+            <p className="mt-1 whitespace-pre-line text-slate-800">{trip.notes}</p>
+          </section>
+        )}
         {outsideDays.length > 0 && (
           <section aria-labelledby="outside-heading" className="space-y-3">
             <div className="flex gap-3 rounded-2xl bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-amber-200">

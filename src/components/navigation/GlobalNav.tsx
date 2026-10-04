@@ -17,7 +17,7 @@ const ITEMS = [
 ] as const;
 
 /**
- * Global navigation: a bottom bar on phones, a sidebar on large screens (SCREENS.md).
+ * Global navigation: a bottom bar of icons on phones, a sidebar on large screens (SCREENS.md).
  * Active state depends only on the route shape, never on IDs.
  */
 export function GlobalNav() {
@@ -44,8 +44,9 @@ export function GlobalNav() {
                   active ? "text-teal-700 lg:bg-teal-50" : "text-slate-500 lg:text-slate-700 lg:hover:bg-slate-100"
                 }`}
               >
-                <Icon className="hidden size-5 lg:block" />
-                {label}
+                {/* Phones: icon only (the label stays for screen readers); sidebar: icon and label. */}
+                <Icon className="size-6 lg:size-5" />
+                <span className="sr-only lg:not-sr-only">{label}</span>
               </Link>
             </li>
           );

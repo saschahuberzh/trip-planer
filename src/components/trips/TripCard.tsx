@@ -16,7 +16,7 @@ export function TripCard({ trip, onShowActions }: TripCardProps) {
   return (
     <article className="relative overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
       <Link
-        href={appRoutePath({ name: "trip-overview", tripId: trip.id })}
+        href={appRoutePath({ name: "trip-section", tripId: trip.id, section: "plan" })}
         className="block focus-visible:outline-2 focus-visible:outline-teal-700"
       >
         <TripCoverImage imageId={trip.coverImageId} seed={trip.id} label={trip.name} className="h-36 w-full" />
