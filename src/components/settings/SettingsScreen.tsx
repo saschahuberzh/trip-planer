@@ -141,6 +141,7 @@ const COUNT_LABELS: [BackupTable, string, string][] = [
   ["bookings", "booking", "bookings"],
   ["expenses", "expense", "expenses"],
   ["images", "photo", "photos"],
+  ["visitedCountries", "visited country", "visited countries"],
 ];
 
 type ImportState =

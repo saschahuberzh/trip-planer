@@ -11,6 +11,7 @@ import { createSafetyBackupRepository } from "./safetyBackupRepository";
 import { createActivityRepository, createTransportRepository } from "./timelineRepositories";
 import { createTripDayRepository } from "./tripDayRepository";
 import { createTripRepository } from "./tripRepository";
+import { createVisitedCountryRepository } from "./visitedCountryRepository";
 import { writeTransaction } from "./shared";
 
 export * from "./errors";
@@ -31,6 +32,7 @@ export function createRepositories(db: TravelDatabase) {
     bookings: createBookingRepository(db),
     expenses: createExpenseRepository(db),
     images: createImageRepository(db),
+    visitedCountries: createVisitedCountryRepository(db),
     appMeta: createAppMetaRepository(db),
     safetyBackups: createSafetyBackupRepository(db),
     backup: createBackupRepository(db),

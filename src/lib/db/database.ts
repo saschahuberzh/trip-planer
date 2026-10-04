@@ -12,6 +12,7 @@ import type {
   Transport,
   Trip,
   TripDay,
+  VisitedCountry,
 } from "@/lib/domain/types";
 import { DATABASE_NAME, DATABASE_VERSION, SCHEMA_VERSIONS } from "./schema";
 
@@ -37,6 +38,7 @@ export class TravelDatabase extends Dexie {
   images!: Table<ImageAsset, string>;
   appMeta!: Table<AppMetaRecord, AppMetaKey>;
   safetyBackups!: Table<SafetyBackup, string>;
+  visitedCountries!: Table<VisitedCountry, string>;
 
   constructor(name: string = DATABASE_NAME) {
     super(name);
@@ -69,6 +71,7 @@ export class TravelDatabase extends Dexie {
       this.bookings,
       this.expenses,
       this.images,
+      this.visitedCountries,
     ];
   }
 }

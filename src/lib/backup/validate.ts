@@ -13,6 +13,7 @@ import {
   assertValidTransport,
   assertValidTrip,
   assertValidTripDay,
+  assertValidVisitedCountry,
   ValidationError,
 } from "@/lib/domain/validation";
 import {
@@ -28,6 +29,7 @@ import {
   type Transport,
   type Trip,
   type TripDay,
+  type VisitedCountry,
 } from "@/lib/domain/types";
 import type { DomainSnapshot } from "@/lib/repositories";
 import { base64ToBlob } from "./base64";
@@ -143,6 +145,26 @@ export async function validateBackup(input: unknown): Promise<BackupValidationRe
   const expenses = checkRecords<Expense>("expenses", backup.expenses, (expense) => {
     // Without its trip ("" matches no currency) the reference check below reports the problem.
     assertValidExpense(expense, tripsById.get(expense.tripId)?.baseCurrency ?? "");
+  });
+
+  const visitedCountries: VisitedCountry[] = [];
+  const countryCodes = new Set<string>();
+  backup.visitedCountries.forEach((item, index) => {
+    const label = `visitedCountries[${index}]`;
+    if (!isRecord(item)) {
+      fail(`${label}: not an object.`);
+      return;
+    }
+    const country = item as unknown as VisitedCountry;
+    try {
+      assertValidVisitedCountry(country);
+    } catch (error) {
+      fail(`${label}: ${error instanceof ValidationError ? error.issues.join("; ") : "malformed record"}.`);
+      return;
+    }
+    if (countryCodes.has(country.countryCode)) fail(`${label} (${country.countryCode}): duplicate country.`);
+    countryCodes.add(country.countryCode);
+    visitedCountries.push(country);
   });
 
   // --- Images: unreadable ones are dropped with a warning (never block a restore) ---
@@ -261,6 +283,7 @@ export async function validateBackup(input: unknown): Promise<BackupValidationRe
     expenses,
     // Images no trip uses would be orphans; they are not restored.
     images: images.filter((image) => usedImages.has(image.id)),
+    visitedCountries,
   };
   return {
     ok: true,

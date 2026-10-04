@@ -10,6 +10,10 @@ test("export and restore into a fresh installation; invalid files change nothing
   await installApp(page);
   const tripPath = await createTrip(page, { name: "Backup trip", start: "2027-09-01", end: "2027-09-03" });
   await addActivityToFirstDay(page, tripPath, "Old town walk");
+  await page.goto("/countries");
+  await page.getByLabel("Search countries").fill("japan");
+  await page.getByLabel("Japan").click();
+  await expect(page.getByText("1 country visited")).toBeVisible();
 
   // Export works offline too.
   await goOffline(context);
@@ -20,7 +24,7 @@ test("export and restore into a fresh installation; invalid files change nothing
   const backupPath = testInfo.outputPath("backup.json");
   await download.saveAs(backupPath);
   await expect(page.getByText("Last export: never")).toHaveCount(0);
-  expect(JSON.parse(readFileSync(backupPath, "utf8"))).toMatchObject({ format: "travel-planner-backup", version: 1 });
+  expect(JSON.parse(readFileSync(backupPath, "utf8"))).toMatchObject({ format: "travel-planner-backup", version: 2, visitedCountries: [{ countryCode: "JP" }] });
 
   // A fresh installation: new context, no data.
   const fresh = await browser.newContext();
@@ -47,5 +51,7 @@ test("export and restore into a fresh installation; invalid files change nothing
   await app.goto(tripPath + "/plan");
   await expect(app.getByRole("heading", { name: "Backup trip" })).toBeVisible();
   await expect(app.locator("article").first()).toContainText("Old town walk");
+  await app.goto("/countries");
+  await expect(app.getByText("1 country visited")).toBeVisible();
   await fresh.close();
 });

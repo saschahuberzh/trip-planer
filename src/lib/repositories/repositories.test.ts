@@ -348,7 +348,7 @@ describe("delete behavior", () => {
 
     expect(await repos.trips.get(trip.id)).toBeUndefined();
     expect(await repos.images.get(cover.id)).toBeUndefined();
-    for (const table of db.domainTables.filter((t) => t.name !== "trips" && t.name !== "images")) {
+    for (const table of db.domainTables.filter((t) => !["trips", "images", "visitedCountries"].includes(t.name))) {
       expect(await table.where("tripId").equals(trip.id).count()).toBe(0);
     }
     expect(await repos.tripDays.listByTrip(other.trip.id)).toHaveLength(1);
@@ -398,6 +398,29 @@ describe("images", () => {
   });
 });
 
+describe("visited countries", () => {
+  it("adds a country once, lists and removes it, and survives deleting trips", async () => {
+    const first = await repos.visitedCountries.add("UZ");
+    expect(first).toMatchObject({ countryCode: "UZ" });
+    expect(await repos.visitedCountries.add("UZ")).toEqual(first);
+    await repos.visitedCountries.add("KZ");
+    const { trip } = await createTripWithDay();
+    await repos.trips.delete(trip.id);
+    expect((await repos.visitedCountries.list()).map((country) => country.countryCode).sort()).toEqual(["KZ", "UZ"]);
+
+    await repos.visitedCountries.remove("UZ");
+    await repos.visitedCountries.remove("UZ");
+    expect((await repos.visitedCountries.list()).map((country) => country.countryCode)).toEqual(["KZ"]);
+  });
+
+  it("rejects codes that aren't two-letter ISO codes", async () => {
+    for (const code of ["uz", "UZB", "Uzbekistan", ""]) {
+      await expect(repos.visitedCountries.add(code)).rejects.toThrow(ValidationError);
+    }
+    expect(await repos.visitedCountries.list()).toEqual([]);
+  });
+});
+
 describe("app meta", () => {
   it("stores typed values outside the domain tables", async () => {
     expect(await repos.appMeta.get("storagePersistence")).toBeUndefined();
@@ -411,7 +434,7 @@ describe("app meta", () => {
 describe("safety backups", () => {
   const data: BackupData = {
     format: "travel-planner-backup",
-    version: 1,
+    version: 2,
     exportedAt: "2026-10-03T19:00:00.000Z",
     appVersion: "0.1.0",
     databaseVersion: 1,
@@ -424,6 +447,7 @@ describe("safety backups", () => {
     bookings: [],
     expenses: [],
     images: [],
+    visitedCountries: [],
   };
 
   it("keeps only the 3 most recent backups, newest first", async () => {

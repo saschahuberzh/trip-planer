@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BACKUP_VERSION } from "@/lib/backup/format";
 import { TravelDatabase } from "@/lib/db/database";
+import { DATABASE_VERSION } from "@/lib/db/schema";
 import type { BackupData } from "@/lib/domain/types";
 import { createRepositories, type DomainSnapshot, type Repositories } from "@/lib/repositories";
 import { createBackupService, type BackupService } from "./backupService";
@@ -57,15 +58,19 @@ async function seed(repos: Repositories): Promise<void> {
   const booking = await repos.bookings.create({ tripId: trip.id, type: "train", title: "Tickets", linkedEntity: { type: "transport", id: transport.id } });
   await repos.bookings.create({ tripId: trip.id, type: "accommodation", title: "Hotel booking", linkedEntity: { type: "accommodation", id: stay.id } });
   await repos.expenses.create({ tripId: trip.id, title: "Tickets", category: "transport", status: "paid", originalAmount: 27, originalCurrency: "USD", exchangeRateToBase: 0.9, amountInBaseCurrency: 24.3, linkedEntity: { type: "booking", id: booking.id } });
+  await repos.visitedCountries.add("UZ");
+  await repos.visitedCountries.add("KZ");
   await repos.expenses.create({ tripId: trip.id, title: "Plov", category: "food", status: "planned", originalAmount: 80000, originalCurrency: "UZS", date: "2026-06-12", linkedEntity: { type: "activity", id: activity.id } });
 }
 
 async function comparable(snapshot: DomainSnapshot) {
-  const sortById = <T extends { id: string }>(items: T[]) => [...items].sort((a, b) => a.id.localeCompare(b.id));
+  const sortById = <T extends { id: string }>(items: readonly T[]) => [...items].sort((a, b) => a.id.localeCompare(b.id));
+  const { images, visitedCountries, ...tables } = snapshot;
   return {
-    ...Object.fromEntries(Object.entries(snapshot).filter(([table]) => table !== "images").map(([table, items]) => [table, sortById(items)])),
+    ...Object.fromEntries(Object.entries(tables).map(([table, items]) => [table, sortById<{ id: string }>(items)])),
+    visitedCountries: [...visitedCountries].sort((a, b) => a.countryCode.localeCompare(b.countryCode)),
     images: await Promise.all(
-      sortById(snapshot.images).map(async ({ blob, ...image }) => ({ ...image, bytes: [...new Uint8Array(await blob.arrayBuffer())], type: blob.type })),
+      sortById(images).map(async ({ blob, ...image }) => ({ ...image, bytes: [...new Uint8Array(await blob.arrayBuffer())], type: blob.type })),
     ),
   };
 }
@@ -85,7 +90,8 @@ describe("export", () => {
     const device = openDevice();
     await seed(device.repos);
     const backup = await exported(device);
-    expect(backup).toMatchObject({ format: "travel-planner-backup", version: BACKUP_VERSION, exportedAt: "2026-10-03T19:00:00.000Z", databaseVersion: 1 });
+    expect(backup).toMatchObject({ format: "travel-planner-backup", version: BACKUP_VERSION, exportedAt: "2026-10-03T19:00:00.000Z", databaseVersion: DATABASE_VERSION });
+    expect(backup.visitedCountries.map((country) => country.countryCode).sort()).toEqual(["KZ", "UZ"]);
     expect(backup.trips).toHaveLength(1);
     expect(backup.tripDays).toHaveLength(3);
     expect(backup.images[0]).toMatchObject({ mimeType: "image/jpeg", width: 1600, dataBase64: Buffer.from(coverBytes).toString("base64") });
@@ -109,7 +115,7 @@ describe("restore (acceptance criteria)", () => {
     const result = await fresh.backup.validateBackupText(text);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.backup.summary).toMatchObject({ tripNames: ["Silk Road"], counts: { trips: 1, tripDays: 3, places: 2, activities: 2, transports: 1, accommodations: 1, bookings: 2, expenses: 2, images: 1 } });
+    expect(result.backup.summary).toMatchObject({ tripNames: ["Silk Road"], counts: { trips: 1, tripDays: 3, places: 2, activities: 2, transports: 1, accommodations: 1, bookings: 2, expenses: 2, images: 1, visitedCountries: 2 } });
     expect(result.backup.warnings).toEqual([]);
     await fresh.backup.restoreBackup(result.backup);
 
@@ -156,6 +162,32 @@ describe("validation", () => {
     await expectRejected(device, { ...backup, version: BACKUP_VERSION + 1 }, /newer app version/);
     await expectRejected(device, { ...backup, version: 0 }, /no longer supported/);
     await expectRejected(device, { ...backup, version: "1" }, /no valid format version/);
+  });
+
+  it("imports a format 1 backup (before visited countries) without countries", async () => {
+    const source = openDevice();
+    await seed(source.repos);
+    const { visitedCountries, ...current } = await exported(source);
+    expect(visitedCountries).toHaveLength(2);
+    const fresh = openDevice();
+    await fresh.repos.visitedCountries.add("JP");
+    const result = await fresh.backup.validateBackupText(JSON.stringify({ ...current, version: 1 }));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.backup.summary.counts).toMatchObject({ trips: 1, visitedCountries: 0 });
+    await fresh.backup.restoreBackup(result.backup);
+    // Replace restore: the backup had no countries, so none remain (the safety backup keeps JP).
+    expect(await fresh.repos.visitedCountries.list()).toEqual([]);
+    expect(await fresh.repos.trips.count()).toBe(1);
+  });
+
+  it("rejects invalid and duplicate visited countries", async () => {
+    const device = openDevice();
+    const backup = await exported(device);
+    const country = { countryCode: "UZ", createdAt: "2026-10-03T19:00:00.000Z", updatedAt: "2026-10-03T19:00:00.000Z" };
+    await expectRejected(device, { ...backup, visitedCountries: [{ ...country, countryCode: "Uzbekistan" }] }, /two-letter ISO 3166-1 code/);
+    await expectRejected(device, { ...backup, visitedCountries: [country, country] }, /duplicate country/);
+    await expectRejected(device, { ...backup, visitedCountries: "UZ" }, /"visitedCountries" is missing/);
   });
 
   it("requires every table", async () => {

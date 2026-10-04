@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { APP_NAME } from "@/lib/app";
-import { SettingsIcon, SuitcaseIcon } from "@/components/ui/icons";
+import { GlobeIcon, SettingsIcon, SuitcaseIcon } from "@/components/ui/icons";
 
 const ITEMS = [
   {
@@ -12,6 +12,7 @@ const ITEMS = [
     Icon: SuitcaseIcon,
     isActive: (pathname: string) => pathname === "/" || pathname.startsWith("/trips/"),
   },
+  { href: "/countries", label: "Countries", Icon: GlobeIcon, isActive: (pathname: string) => pathname.startsWith("/countries") },
   { href: "/settings", label: "Settings", Icon: SettingsIcon, isActive: (pathname: string) => pathname.startsWith("/settings") },
 ] as const;
 

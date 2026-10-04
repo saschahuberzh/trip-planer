@@ -1,17 +1,14 @@
 "use client";
 
 // MapLibre implementation of MapView. Loaded lazily (client only) by MapView.
-import "maplibre-gl/dist/maplibre-gl.css";
 import {
   AttributionControl,
-  getVersion,
   LngLatBounds,
   Map as MapLibreMap,
   Marker,
   NavigationControl,
-  setWorkerUrl,
   type GeoJSONSource,
-} from "maplibre-gl";
+} from "./maplibreSetup";
 import { useEffect, useRef, useState } from "react";
 import { boundsOf, type MapMarker, type MapSegment } from "@/lib/map/mapModel";
 import { MAP_STYLE_URL } from "@/lib/map/config";
@@ -20,10 +17,6 @@ import { TRANSPORT_SYMBOLS, TRANSPORT_TYPE_LABELS } from "@/components/itinerary
 import { PLACE_TYPE_SYMBOLS } from "@/components/places/placeDisplay";
 import { MARKER_COLORS, ROUTE_LINE_COLOR, STAY_MARKER_COLOR, UNPLANNED_MARKER_COLOR } from "./markerColors";
 import type { MapViewProps } from "./types";
-
-// MapLibre derives its worker URL from import.meta.url, which bundling breaks;
-// scripts/copy-maplibre-worker.mjs publishes the worker under this path.
-setWorkerUrl(`/vendor/maplibre-gl/${getVersion()}/maplibre-gl-worker.mjs`);
 
 const LINE_SOURCE = "trip-line";
 const WORLD: LatLng = { latitude: 30, longitude: 20 };

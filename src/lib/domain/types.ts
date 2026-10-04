@@ -212,6 +212,12 @@ export interface ImageAsset extends EntityMetadata {
   height: number;
 }
 
+/** A country the user has visited (Countries tab). Not tied to a trip. */
+export interface VisitedCountry extends EntityMetadata {
+  /** ISO 3166-1 alpha-2 code, e.g. "UZ". Also the primary key. */
+  countryCode: string;
+}
+
 export interface BackupImage {
   id: string;
   mimeType: string;
@@ -237,6 +243,8 @@ export interface BackupData {
   bookings: Booking[];
   expenses: Expense[];
   images: BackupImage[];
+  /** Since backup format 2. */
+  visitedCountries: VisitedCountry[];
 }
 
 export const SAFETY_BACKUP_REASONS = ["before_restore"] as const;

@@ -30,6 +30,7 @@ import {
   type Transport,
   type Trip,
   type TripDay,
+  type VisitedCountry,
 } from "./types";
 
 export class ValidationError extends Error {
@@ -41,6 +42,9 @@ export class ValidationError extends Error {
     this.name = "ValidationError";
   }
 }
+
+/** ISO 3166-1 alpha-2 format (user-assigned codes like "XK" for Kosovo included). */
+export const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 
 const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
 
@@ -334,4 +338,14 @@ export function assertValidImageAsset(image: ImageAsset): void {
     c.check(Number.isInteger(image[field]) && image[field] > 0, `${field} must be a positive whole number`);
   }
   c.result("image");
+}
+
+export function assertValidVisitedCountry(country: VisitedCountry): void {
+  const c = new Checker();
+  c.check(typeof country.countryCode === "string" && COUNTRY_CODE_PATTERN.test(country.countryCode), "countryCode must be a two-letter ISO 3166-1 code");
+  for (const field of ["createdAt", "updatedAt"] as const) {
+    const value = country[field];
+    c.check(typeof value === "string" && ISO_INSTANT.test(value), `${field} must be an ISO 8601 UTC instant`);
+  }
+  c.result("visited country");
 }

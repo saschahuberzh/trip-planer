@@ -15,6 +15,7 @@ Routes are defined in TECH_STACK.md.
 Always reachable (e.g. bottom bar on mobile, sidebar on desktop):
 
 - Trips (`/`)
+- Countries (`/countries`)
 - Settings (`/settings`)
 
 Inside a trip, the trip section navigation is shown in addition (see Trip Overview).
@@ -433,6 +434,21 @@ Booking card:
 - booking reference
 - price (informational)
 - linked transport/accommodation/activity, if any
+
+---
+
+# 11a. Countries
+
+World overview of visited countries (global, not part of a trip).
+
+- world map with country outlines; visited countries are filled
+- the map is bundled with the app (no tiles), so it also works offline
+- tap a country on the map → panel with its name and "Mark as visited" / "Remove"
+- count of visited countries
+- search field and list of all countries with checkboxes (needed for small countries
+  and as the accessible alternative to the map); visited countries listed first
+- empty state: hint to tap a country or search the list
+- large screens: map on the left, list on the right
 
 ---
 

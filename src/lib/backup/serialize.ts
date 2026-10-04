@@ -37,6 +37,7 @@ export async function serializeBackup(
     bookings: snapshot.bookings,
     expenses: snapshot.expenses,
     images,
+    visitedCountries: snapshot.visitedCountries,
   };
 }
 

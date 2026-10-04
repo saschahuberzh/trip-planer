@@ -477,3 +477,24 @@ Performance review.
 
 POLISH-008
 Final production build.
+
+---
+
+# Phase 15 – Countries
+
+Global "Countries" tab with a world map of visited countries.
+
+COUNTRY-001
+VisitedCountry table (IndexedDB schema 2), repository, service, backup format 2 with
+migration from format 1, tests.
+
+COUNTRY-002
+Global navigation item, `/countries` route (precached), searchable country list with
+checkboxes, count, empty state.
+
+COUNTRY-003
+World map from bundled Natural Earth outlines (MapLibre, no tiles, works offline),
+tap to select and mark a country, desktop layout.
+
+COUNTRY-004 (optional, not started)
+Suggestions from completed trips' countries (confirmation required, never automatic).

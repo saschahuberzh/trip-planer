@@ -32,6 +32,13 @@ export const SCHEMA_VERSIONS: readonly SchemaVersion[] = [
       safetyBackups: "id, createdAt",
     },
   },
+  {
+    // Countries tab: adds a table, existing data is unchanged.
+    version: 2,
+    stores: {
+      visitedCountries: "countryCode",
+    },
+  },
 ];
 
 export const DATABASE_VERSION = SCHEMA_VERSIONS[SCHEMA_VERSIONS.length - 1].version;

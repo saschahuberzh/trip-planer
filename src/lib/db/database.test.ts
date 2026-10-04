@@ -58,6 +58,7 @@ describe("schema", () => {
         "transports",
         "tripDays",
         "trips",
+        "visitedCountries",
       ].sort(),
     );
   });
@@ -93,6 +94,10 @@ describe("migrations", () => {
     await current.open();
     expect(current.verno).toBe(DATABASE_VERSION);
     expect(await current.trips.get(trip.id)).toEqual(trip);
+    // Version 2 only added the visited countries table.
+    expect(await current.visitedCountries.count()).toBe(0);
+    await current.visitedCountries.add({ countryCode: "JP", createdAt: trip.createdAt, updatedAt: trip.createdAt });
+    expect(await current.trips.count()).toBe(1);
   });
 
   it("fails without touching data when the stored database is newer", async () => {

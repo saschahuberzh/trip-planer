@@ -519,6 +519,29 @@ Rules:
 
 ---
 
+## VisitedCountry
+
+A country the user has marked as visited in the Countries tab. Global, not tied to a trip,
+and set manually (trip `countries` are free text and are not interpreted).
+
+```ts
+VisitedCountry {
+  countryCode: string          // ISO 3166-1 alpha-2, e.g. "UZ" ("XK" for Kosovo); primary key
+  createdAt: string
+  updatedAt: string
+}
+```
+
+Rules:
+
+- One record per country; unmarking deletes the record (nothing references it).
+- Country names are not stored; the UI takes them from the browser (`Intl.DisplayNames`).
+- Selectable countries are those drawn on the bundled world map (Natural Earth 1:50m,
+  `world-atlas` package). The map is bundled with the app and needs no internet.
+- Added in IndexedDB schema version 2 (new table only; existing data unchanged).
+
+---
+
 ## AppMeta (non-domain)
 
 Local key/value store for application state that is not user travel data.
@@ -556,7 +579,7 @@ Keep only the most recent 3 safety backups. They can be exported as JSON from Se
 ```ts
 BackupData {
   format: "travel-planner-backup"
-  version: number              // backup format version, starts at 1
+  version: number              // backup format version (current: 2)
   exportedAt: string           // ISO 8601 UTC instant
   appVersion: string
   databaseVersion: number      // informational
@@ -570,6 +593,7 @@ BackupData {
   bookings: Booking[]
   expenses: Expense[]
   images: BackupImage[]
+  visitedCountries: VisitedCountry[]   // since version 2
 }
 
 BackupImage {
@@ -584,6 +608,13 @@ BackupImage {
 ```
 
 The backup format `version` is independent of the IndexedDB schema version.
+
+Format history:
+
+- 1: initial format.
+- 2: adds `visitedCountries`. Version 1 backups are migrated in memory with an empty list
+  (a Replace restore of such a backup therefore leaves no visited countries; the safety
+  backup keeps the previous ones).
 
 ## Images in Backups
 
@@ -665,5 +696,6 @@ in the repository/service layer.
 | Accommodation | Bookings and Expenses linking to it are unlinked, not deleted. |
 | Booking | Expenses linking to it are unlinked, not deleted. |
 | Expense | No dependents. |
+| VisitedCountry | No dependents. Not affected by deleting trips. |
 
 Never leave dangling references.

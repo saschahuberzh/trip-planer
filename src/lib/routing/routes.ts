@@ -15,6 +15,7 @@ export type TripSection = (typeof TRIP_SECTIONS)[number];
 
 export type AppRoute =
   | { name: "trips" }
+  | { name: "countries" }
   | { name: "settings" }
   | { name: "trip-overview"; tripId: string }
   | { name: "trip-section"; tripId: string; section: TripSection }
@@ -55,6 +56,7 @@ export function parseAppRoute(pathname: string): AppRoute | null {
 
   if (segments.length === 0) return { name: "trips" };
   if (segments.length === 1 && segments[0] === "settings") return { name: "settings" };
+  if (segments.length === 1 && segments[0] === "countries") return { name: "countries" };
   if (segments[0] !== "trips" || segments.length < 2 || segments.length > 4) return null;
 
   const [, tripId, section, childId] = segments;
@@ -71,6 +73,8 @@ export function appRoutePath(route: AppRoute): string {
   switch (route.name) {
     case "trips":
       return "/";
+    case "countries":
+      return "/countries";
     case "settings":
       return "/settings";
     case "trip-overview":
@@ -102,6 +106,7 @@ export function tripSectionOf(route: AppRoute): TripSection | null {
 function toTemplateRoute(route: AppRoute): AppRoute {
   switch (route.name) {
     case "trips":
+    case "countries":
     case "settings":
       return route;
     case "trip-overview":
@@ -127,6 +132,7 @@ export function templatePathFor(pathname: string): string | null {
 /** Every page HTML that the service worker precaches. */
 export const PRECACHED_PAGE_PATHS: readonly string[] = [
   appRoutePath({ name: "trips" }),
+  appRoutePath({ name: "countries" }),
   appRoutePath({ name: "settings" }),
   appRoutePath({ name: "trip-overview", tripId: ROUTE_TEMPLATE_ID }),
   ...TRIP_SECTIONS.map((section) =>

@@ -1,7 +1,7 @@
 // Copies MapLibre's worker module (and the shared chunk it imports) into
 // public/vendor/maplibre-gl/<version>/. MapLibre derives its worker URL from
 // import.meta.url, which doesn't survive bundling, so the app sets it explicitly
-// (see src/components/map/MapLibreMapView.tsx). The folder is generated; not committed.
+// (see src/components/map/maplibreSetup.ts). The folder is generated; not committed.
 import { copyFileSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";

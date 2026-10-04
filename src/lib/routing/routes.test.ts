@@ -60,6 +60,7 @@ describe("appRoutePath", () => {
   it("round-trips through parseAppRoute", () => {
     const routes = [
       { name: "trips" },
+      { name: "countries" },
       { name: "settings" },
       { name: "trip-overview", tripId },
       { name: "trip-section", tripId, section: "budget" },
@@ -88,12 +89,14 @@ describe("templatePathFor", () => {
       `/trips/${ROUTE_TEMPLATE_ID}/places/${ROUTE_TEMPLATE_ID}`,
     );
     expect(templatePathFor("/settings")).toBe("/settings");
+    expect(templatePathFor("/countries")).toBe("/countries");
     expect(templatePathFor("/unknown")).toBeNull();
   });
 
   it("only returns precached pages", () => {
     const samples = [
       "/",
+      "/countries",
       "/settings",
       `/trips/${tripId}`,
       ...TRIP_SECTIONS.map((section) => `/trips/${tripId}/${section}`),

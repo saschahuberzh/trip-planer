@@ -32,7 +32,8 @@ function MapUnavailable({ className }: { className: string }) {
   );
 }
 
-class MapErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+/** Keeps any map failure inside the map area. */
+export class MapErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
 
   static getDerivedStateFromError() {
