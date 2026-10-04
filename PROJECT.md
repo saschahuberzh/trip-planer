@@ -113,6 +113,15 @@ Places can exist without being assigned to a specific day.
 
 A place is "planned" when it is referenced by an activity assigned to a day; otherwise it is "unplanned".
 
+Places are collected independently of the itinerary (a list of places the user wants to visit)
+and can be linked to activities. One place can be used by several activities.
+
+Places can be found with an online place search (name → address and coordinates), similar to
+searching in Google Maps. The search provider is replaceable. Search results are copied into
+the app's own Place records, so saved places never depend on the search provider and remain
+available offline. Without internet, places can still be created manually (name only, or with
+coordinates from a map link) and completed later.
+
 ---
 
 ### 3.4 Map

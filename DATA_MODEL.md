@@ -142,10 +142,24 @@ Place {
   favorite: boolean
   visited: boolean
 
+  externalRef?: {              // where the place was found; informational only
+    provider: string           // e.g. "photon"
+    id: string                 // provider's ID for the place, e.g. "N123456" (OSM node)
+  }
+
   createdAt: string
   updatedAt: string
 }
 ```
+
+Provider independence:
+
+- A Place is always a complete record in our own model. Name, type, address and coordinates are
+  copied from the search result when the user saves it and can then be edited freely.
+- `externalRef` is optional and informational. The app never needs the provider to display,
+  edit, back up or restore a place, and never re-fetches or overwrites place data automatically.
+- `latitude`/`longitude` are WGS 84 decimal degrees and are set together or not at all.
+- Places without coordinates are valid; they are listed normally and not shown on the map.
 
 A place is **planned** when at least one Activity with a `tripDayId` references it.
 Otherwise it is **unplanned**. This is derived, not stored.
@@ -203,8 +217,17 @@ Activity {
 }
 ```
 
-"Add Place" from a Day View selects or creates a Place, then creates an Activity with
-`placeId` and `tripDayId` set (title defaults to the place name).
+An Activity may reference one Place (`placeId`); a Place may be referenced by any number of Activities.
+
+- The activity form lets the user select an existing place of the trip, create a new place
+  (search or manual), or remove the link. Existing activities can be linked later.
+- When a place is selected and the title is empty, the title defaults to the place name.
+  The title is stored on the Activity and is not updated when the place is renamed.
+- Deleting an Activity never deletes its Place.
+
+"Add Place" from a Day View is a shortcut: it opens place selection/creation directly and creates
+an Activity with `placeId` and `tripDayId` set (title = place name), appended to the day.
+"Assign to day" on a Place does the same for a chosen day.
 
 ---
 

@@ -191,6 +191,26 @@ Filters (including planned/unplanned as defined in DATA_MODEL.md).
 PLACE-008
 "Add Place" from Day View (select/create place, create linked activity).
 
+PLACE-009
+Place search behind the `PlaceSearchProvider` abstraction (TECH_STACK.md "Place Search");
+Photon as the initial provider; results mapped into our own Place model (`externalRef` informational).
+
+PLACE-010
+Place field in the activity form: select existing, create new, remove link; existing activities can be linked.
+
+PLACE-011
+Manual places (name only, no search result required); coordinates from pasted map links
+and manual entry (works offline); search results usable as a starting point.
+
+PLACE-012
+Place Detail "assign to day" and list of activities using the place.
+
+Acceptance criteria:
+
+Places can be created, edited and linked to activities offline (without search).
+Search failures never block place editing.
+Provider mapping, map-link parsing and place delete/unlink behavior have tests.
+
 ---
 
 # Phase 6 – Map
@@ -214,7 +234,12 @@ MAP-006
 Place category filtering.
 
 MAP-007
-Route/order visualization.
+Route/order visualization (numbering and straight-line connections as defined in SCREENS.md "Map").
+
+MAP-008
+Map picker: set or correct a place's position by tapping/dragging a pin, available from
+Create / Edit Place ("Set on map") and for places listed as "not on map" on the Map screen.
+Map failure leaves link/manual coordinate entry usable.
 
 The application must remain usable if map loading fails.
 

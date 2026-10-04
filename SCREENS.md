@@ -171,6 +171,13 @@ Actions:
 "Add place": select an existing place or create a new one; this creates an activity
 linked to that place and this day.
 
+Activity form (create/edit):
+
+- title, start/end time (optional), day or Unplanned, notes
+- place (optional): select an existing place of the trip, create a new one (see Create / Edit Place),
+  or remove the link; when a place is selected and the title is empty, the title becomes the place name
+- activities with a place show the place name/type in the timeline
+
 ---
 
 # 6. Map
@@ -192,6 +199,13 @@ Markers:
 Major trip stops can display route order numbers.
 
 Selecting a marker opens a place detail panel.
+
+Places without coordinates are listed as "not on map" with an action to set the position
+by tapping the map (same map picker as in Create / Edit Place).
+
+Route order: in the day view, stops are numbered in timeline order; for the entire trip,
+stops follow days chronologically, then timeline order. Consecutive stops are connected
+with straight lines (no road/rail routing).
 
 ---
 
@@ -217,6 +231,40 @@ Each place shows:
 - favorite state
 - visited state
 
+Actions:
+
+- add place (opens Create / Edit Place)
+
+Empty state explains that places are the list of places to visit and can later be added to days.
+
+---
+
+# 7a. Create / Edit Place
+
+Sheet used from Places, Place Detail, the activity form and "Add place" in the Day View.
+
+Search (online):
+
+- search field with suggestions while typing (name, type, address)
+- choosing a result fills name, type, address and coordinates; all fields remain editable
+- a result can be used as a starting point: e.g. search the street or a nearby landmark,
+  then change the name/type and adjust the position (hint shown when nothing is found)
+- provider attribution is shown with the results
+- offline or on error: short message ("Search needs an internet connection"), manual entry stays available
+- no result: "Add manually" keeps the typed text as the name
+
+Fields:
+
+- name, type, address
+- coordinates (optional): set from a search result, a pasted map link, entered manually,
+  or "Set on map" (Phase 6); can be removed
+- "Set on map" opens a map picker: tap or drag the pin, confirm or cancel; starts at the current
+  coordinates, otherwise at the trip's other places; needs map tiles (online) — when the map
+  can't load, the picker says so and the other options remain available
+- website, notes, favorite, visited
+
+Existing places of the trip with the same name are suggested to avoid duplicates.
+
 ---
 
 # 8. Place Detail
@@ -235,9 +283,11 @@ Displays:
 Actions:
 
 - edit
-- assign to day
+- assign to day (creates an activity linked to this place on the chosen day)
 - open map
 - delete
+
+Also shows the activities (days) that use this place.
 
 ---
 

@@ -157,6 +157,67 @@ Only keys intended for browser use may be exposed.
 
 ---
 
+## Place Search
+
+Place search (geocoding: text → name, address, coordinates) is an online-only convenience.
+It is never required for core functionality.
+
+Abstraction:
+
+```ts
+interface PlaceSearchProvider {
+  id: string                                   // e.g. "photon"; stored in Place.externalRef.provider
+  attribution: string                          // shown with the results, e.g. "© OpenStreetMap contributors"
+  search(query: string, options: PlaceSearchOptions, signal: AbortSignal): Promise<PlaceSearchResult[]>
+}
+
+PlaceSearchOptions {
+  language?: string                            // UI language
+  near?: { latitude: number; longitude: number }   // optional location bias (e.g. trip's places)
+  limit?: number
+}
+
+PlaceSearchResult {                            // provider-neutral, never persisted as-is
+  externalId: string
+  name: string
+  suggestedType: Place["type"]                 // mapped from the provider's category; user can change it
+  address?: string                             // one formatted line
+  latitude: number
+  longitude: number
+}
+```
+
+Rules:
+
+- UI and services use only `PlaceSearchProvider` and `PlaceSearchResult`. Provider-specific
+  request/response types and mapping live in one module per provider.
+- The active provider is selected in one place (configuration via public environment variables).
+  Switching to MapTiler, Geoapify or Google Places means adding a provider module, not changing UI,
+  services or the data model. Provider terms (e.g. storage restrictions) must be checked before
+  switching; a provider whose terms forbid storing coordinates permanently cannot be used as-is.
+- Saving a result creates/updates a Place in our model (see DATA_MODEL.md); results are not cached.
+- Only the query text, language and optional location bias are sent; no other user data.
+- Requests are debounced (≈350 ms), need at least 3 characters, and cancel the previous request.
+- Offline, slow or failed search shows a clear message and offers manual entry.
+  Search failures never block creating or editing places.
+- The service worker never caches search responses.
+- Provider attribution is shown with the results.
+
+Initial provider: **Photon** (komoot, OpenStreetMap data), no API key.
+
+- Endpoint `https://photon.komoot.io/api/`, overridable via `NEXT_PUBLIC_PHOTON_URL`
+  (e.g. for a self-hosted instance).
+- The public instance is a fair-use service without guarantees; keep request volume low.
+- `externalId` = OSM type + ID (e.g. `N123456`).
+
+Coordinates from map links (offline-capable fallback, no network request):
+
+- Pasting a map URL that contains coordinates fills latitude/longitude
+  (e.g. Google Maps `@lat,lng`, `!3dlat!4dlng`, `q=lat,lng`; Apple Maps `ll=lat,lng`;
+  OpenStreetMap `mlat=…&mlon=…`) as well as plain `lat, lng` text.
+- Short links (e.g. `maps.app.goo.gl`) cannot be resolved without a network request to the
+  provider and are not supported; the UI explains this.
+
 ## PWA
 
 Use Serwist for the service worker.

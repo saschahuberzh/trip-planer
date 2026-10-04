@@ -2,7 +2,7 @@
  * Trip management use cases: listing, creating, editing (including TripDay
  * synchronization and cover images) and deleting trips. See DATA_MODEL.md.
  */
-import { compareCalendarDates, eachDateInRange } from "@/lib/domain/dateTime";
+import { compareCalendarDates } from "@/lib/domain/dateTime";
 import type { ImageAsset, Trip, TripDay, TripStatus } from "@/lib/domain/types";
 import {
   getRepositories,
@@ -10,6 +10,7 @@ import {
   type NewTrip,
   type Repositories,
 } from "@/lib/repositories";
+import { daysWithUserDataOutside, syncTripDays } from "./tripDays";
 
 /** Trip fields edited by the user. The cover image is handled separately. */
 export type TripInput = Omit<NewTrip, "coverImageId">;
@@ -52,42 +53,7 @@ export const DEFAULT_BASE_CURRENCY = "EUR";
 
 const GROUP_ORDER: readonly TripStatus[] = ["active", "planned", "completed"];
 
-function isOutside(date: string, startDate: string, endDate: string): boolean {
-  return compareCalendarDates(date, startDate) < 0 || compareCalendarDates(date, endDate) > 0;
-}
-
 export function createTripService(repos: Repositories) {
-  /**
-   * Creates missing TripDays for the range and deletes empty days outside it.
-   * Days with user data outside the range are kept and returned.
-   * Must run inside `repos.transaction`.
-   */
-  async function syncTripDays(tripId: string, startDate: string, endDate: string): Promise<TripDay[]> {
-    const existing = await repos.tripDays.listByTrip(tripId);
-    const existingDates = new Set(existing.map((day) => day.date));
-    for (const date of eachDateInRange(startDate, endDate)) {
-      if (!existingDates.has(date)) await repos.tripDays.create({ tripId, date });
-    }
-    const kept: TripDay[] = [];
-    for (const day of existing) {
-      if (!isOutside(day.date, startDate, endDate)) continue;
-      if (await repos.tripDays.hasUserData(day.id)) kept.push(day);
-      else await repos.tripDays.delete(day.id);
-    }
-    return kept;
-  }
-
-  async function daysWithUserDataOutside(tripId: string, startDate: string, endDate: string): Promise<TripDay[]> {
-    const days = await repos.tripDays.listByTrip(tripId);
-    const result: TripDay[] = [];
-    for (const day of days) {
-      if (isOutside(day.date, startDate, endDate) && (await repos.tripDays.hasUserData(day.id))) {
-        result.push(day);
-      }
-    }
-    return result;
-  }
-
   return {
     getTrip(id: string): Promise<Trip | undefined> {
       return repos.trips.get(id);
@@ -128,7 +94,7 @@ export function createTripService(repos: Repositories) {
       return repos.transaction(async () => {
         const coverImageId = coverImage === undefined ? undefined : (await repos.images.create(coverImage)).id;
         const trip = await repos.trips.create({ ...input, coverImageId });
-        await syncTripDays(trip.id, trip.startDate, trip.endDate);
+        await syncTripDays(repos, trip.id, trip);
         return trip;
       });
     },
@@ -141,7 +107,7 @@ export function createTripService(repos: Repositories) {
       const trip = await repos.trips.get(id);
       const currencyChanges = trip !== undefined && trip.baseCurrency !== change.baseCurrency;
       return {
-        daysOutsideRange: await daysWithUserDataOutside(id, change.startDate, change.endDate),
+        daysOutsideRange: await daysWithUserDataOutside(repos, id, change),
         affectedExpenseCount: currencyChanges ? (await repos.expenses.listByTrip(id)).length : 0,
       };
     },
@@ -168,7 +134,7 @@ export function createTripService(repos: Repositories) {
           notes: input.notes,
           coverImageId,
         });
-        const daysOutsideRange = await syncTripDays(id, trip.startDate, trip.endDate);
+        const daysOutsideRange = await syncTripDays(repos, id, trip);
         return { trip, daysOutsideRange };
       });
     },

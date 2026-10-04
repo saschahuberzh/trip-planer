@@ -108,3 +108,48 @@ export const AlertIcon = (props: IconProps) => (
     <path d="M12 9v4M12 17h.01" />
   </Icon>
 );
+
+export const ArrowUpIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </Icon>
+);
+
+export const ArrowDownIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 5v14M19 12l-7 7-7-7" />
+  </Icon>
+);
+
+export const MoveIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M8 3 4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4" />
+  </Icon>
+);
+
+export const ReorderIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4" />
+  </Icon>
+);
+
+export const ClockIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M12 6v6l4 2" />
+  </Icon>
+);
+
+export const InboxIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+    <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+  </Icon>
+);
+
+export const TrainIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="5" y="3" width="14" height="14" rx="3" />
+    <path d="M5 11h14M9 21l-2-4M15 21l2-4M9 14h.01M15 14h.01" />
+  </Icon>
+);
