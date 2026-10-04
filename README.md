@@ -280,5 +280,10 @@ Requires Node.js 22 LTS (`.nvmrc`) and npm.
 * `npm run dev` – development server (service worker disabled)
 * `npm run build && npm run start` – production build (webpack, required by Serwist) with service worker
 * `npm run typecheck`, `npm run lint`, `npm test`
+* `npm run test:e2e` – production build + Playwright tests of the offline/PWA flows
+  (needs Playwright's Chromium: `npx playwright install chromium`, or an installed Chrome
+  with `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`)
 
-Offline/PWA verification steps: see `docs/OFFLINE_VERIFICATION.md`.
+Offline/PWA verification steps: see `docs/OFFLINE_VERIFICATION.md`;
+iPhone (installed PWA) checklist: see `docs/IPHONE_VERIFICATION.md`.
+App icons: `public/icons/icon.svg` is the source of the PNGs in `public/icons/`.

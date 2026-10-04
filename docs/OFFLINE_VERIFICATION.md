@@ -91,9 +91,30 @@ Use Chrome (DevTools → Application) or Safari.
    - Click "Reload" → the page reloads once with the new version.
    - IndexedDB contents (DevTools → Application → IndexedDB) are unchanged.
 
+## Automated checks (Phase 10)
+
+`npm run test:e2e` builds the app and runs Playwright (Chromium, iPhone-sized, touch):
+
+- `e2e/offline.spec.ts` – the acceptance test of IMPLEMENTATION_PLAN.md Phase 10: open online,
+  create a trip, close, go offline, start again → the trip is there and editable; a trip
+  created offline opens in every section (full navigations served from route templates).
+- `e2e/features-offline.spec.ts` – offline use of every feature: places (search reports
+  offline, manual entry works), places of the day, activities, transport, map fallback,
+  accommodation, bookings, expenses; data survives an offline reload.
+
+The update flow (step 9) needs two builds and is checked manually or by script:
+open the app, rebuild, restart → "Update available" while the new worker waits; "Reload"
+activates it; IndexedDB contents are identical before and after.
+
 ## Last verification
 
-2026-10-03, Next.js 16.3.8 / Serwist 9.5.12, Chrome 154 (headless, scripted via
-playwright-core outside the repo). All steps above passed in 6 consecutive runs,
-both with browser offline emulation and with the server stopped.
-Not yet verified on an iPhone (planned in PWA-004).
+2026-10-04, Next.js 16.3.8 / Serwist 9.5.12, Chrome (headless):
+
+- `npm run test:e2e`: both tests passed.
+- Update flow scripted with a persistent browser profile across two builds: prompt shown,
+  worker waiting until confirmed, IndexedDB unchanged, new worker active after reload.
+- Precache reviewed: `/`, `/settings`, `/~offline`, every trip section and detail template,
+  the manifest, the app icons and the JS/CSS of every route. Not precached by design:
+  map tiles, place search and the MapLibre worker (maps need internet).
+
+Not yet verified on an iPhone: see `docs/IPHONE_VERIFICATION.md`.

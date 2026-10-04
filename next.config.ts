@@ -1,8 +1,16 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import withSerwistInit from "@serwist/next";
 import type { NextConfig } from "next";
 import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
+import { APP_ICON_PATHS } from "./src/lib/app";
 import { PRECACHED_PAGE_PATHS } from "./src/lib/routing/routes";
+
+/** Revision of a file in public/: its content hash, so changed files are re-fetched. */
+function publicFileRevision(url: string): string {
+  return createHash("sha256").update(readFileSync(join(process.cwd(), "public", url))).digest("hex").slice(0, 16);
+}
 
 function withServiceWorker(nextConfig: NextConfig): NextConfig {
   // Page HTML embeds the build ID, so every build gets a new revision.
@@ -14,10 +22,11 @@ function withServiceWorker(nextConfig: NextConfig): NextConfig {
     register: false,
     reloadOnOnline: false,
     cacheOnNavigation: false,
-    additionalPrecacheEntries: [...PRECACHED_PAGE_PATHS, "/manifest.webmanifest"].map((url) => ({
-      url,
-      revision: pageRevision,
-    })),
+    additionalPrecacheEntries: [
+      ...[...PRECACHED_PAGE_PATHS, "/manifest.webmanifest"].map((url) => ({ url, revision: pageRevision })),
+      // Icons (home screen, favicon, manifest) so an offline start shows them too.
+      ...APP_ICON_PATHS.map((url) => ({ url, revision: publicFileRevision(url) })),
+    ],
   })(nextConfig);
 }
 

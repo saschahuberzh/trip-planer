@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- App icon source. Content stays inside the maskable safe zone (radius 205 around the centre). -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(-17 0)">
+  <path d="M148 382 C 196 336 166 290 222 268 S 300 262 318 240" fill="none" stroke="#ccfbf1" stroke-width="18" stroke-linecap="round" stroke-dasharray="1 38"/>
+  <circle cx="148" cy="382" r="20" fill="#ffffff"/>
+  <path d="M330 108c-50 0-88 38-88 87 0 63 88 151 88 151s88-88 88-151c0-49-38-87-88-87z" fill="#ffffff"/>
+  <circle cx="330" cy="195" r="33" fill="#0f766e"/>
+  </g>
+</svg>
