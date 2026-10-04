@@ -79,6 +79,16 @@ describe("places", () => {
     }
   });
 
+  it("sets and removes the location", async () => {
+    const { trip } = await setup();
+    const place = await places.createPlace(trip.id, { name: "Viewpoint", type: "attraction", favorite: false, visited: false });
+    await places.setPlaceLocation(place.id, { latitude: 39.66, longitude: 66.98 });
+    expect(await repos.places.get(place.id)).toMatchObject({ latitude: 39.66, longitude: 66.98 });
+    await places.setPlaceLocation(place.id, undefined);
+    expect(await repos.places.get(place.id)).not.toHaveProperty("latitude");
+    await expect(places.setPlaceLocation(place.id, { latitude: 95, longitude: 0 })).rejects.toThrow();
+  });
+
   it("toggles favorite and visited", async () => {
     const { trip } = await setup();
     const place = await places.createPlace(trip.id, registan);

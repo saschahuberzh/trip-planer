@@ -30,6 +30,8 @@ const eslintConfig = defineConfig([
     // Generated service worker.
     "public/sw.js",
     "public/swe-worker-*.js",
+    // Copied MapLibre worker (scripts/copy-maplibre-worker.mjs).
+    "public/vendor/**",
   ]),
 ]);
 

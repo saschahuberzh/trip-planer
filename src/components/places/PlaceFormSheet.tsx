@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { parseCoordinatesFromText } from "@/lib/domain/coordinates";
+import {
+  formatCoordinate,
+  isValidLatitude,
+  isValidLongitude,
+  parseCoordinateNumber,
+  parseCoordinatesFromText,
+  type LatLng,
+} from "@/lib/domain/coordinates";
 import { PLACE_TYPES, type Place } from "@/lib/domain/types";
 import { usePlaceSearch } from "@/lib/hooks/usePlaceSearch";
 import { getPlaceSearchProvider, type PlaceSearchResult } from "@/lib/placeSearch";
@@ -19,6 +26,7 @@ import { Button } from "@/components/ui/Button";
 import { AlertIcon, CloseIcon, LinkIcon, MapPinIcon, SearchIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/Sheet";
 import { Field, inputClass } from "@/components/trips/formFields";
+import { MapPickerSheet } from "@/components/map/MapPickerSheet";
 import { PLACE_TYPE_LABELS } from "./placeDisplay";
 
 type PlaceFormSheetProps = {
@@ -187,7 +195,7 @@ function PlaceForm({ tripId, places, place, initialName = "", onSaved, onUseExis
         )}
       </Field>
 
-      <LocationFields values={values} errors={errors} onChange={(latitude, longitude) => {
+      <LocationFields values={values} errors={errors} near={placesCenter(places)} onChange={(latitude, longitude) => {
         setValues((current) => ({ ...current, latitude, longitude }));
         setErrors((current) => ({ ...current, latitude: undefined, longitude: undefined }));
       }} />
@@ -338,15 +346,24 @@ function PlaceSearch({
 function LocationFields({
   values,
   errors,
+  near,
   onChange,
 }: {
   values: PlaceFormValues;
   errors: PlaceFormErrors;
+  near: LatLng | undefined;
   onChange: (latitude: string, longitude: string) => void;
 }) {
   const [link, setLink] = useState("");
   const [linkMessage, setLinkMessage] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
   const hasLocation = values.latitude.trim() !== "" || values.longitude.trim() !== "";
+  const latitude = parseCoordinateNumber(values.latitude);
+  const longitude = parseCoordinateNumber(values.longitude);
+  const current =
+    latitude !== null && longitude !== null && isValidLatitude(latitude) && isValidLongitude(longitude)
+      ? { latitude, longitude }
+      : null;
 
   function applyLink(text: string, showErrors: boolean) {
     if (text.trim() === "") {
@@ -373,6 +390,11 @@ function LocationFields({
       <p className="-mt-1 text-sm text-slate-500">
         {hasLocation ? "Shown on the map." : "Without coordinates the place is listed but not shown on the map."}
       </p>
+
+      <Button variant="secondary" onClick={() => setPicking(true)} className="w-full">
+        <MapPinIcon />
+        {current ? "Adjust on map" : "Set on map"}
+      </Button>
 
       <div className="space-y-1.5">
         <label htmlFor="place-link" className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
@@ -454,6 +476,18 @@ function LocationFields({
           Remove location
         </button>
       )}
+
+      <MapPickerSheet
+        open={picking}
+        title="Set position"
+        position={current}
+        near={near}
+        onConfirm={(position) => {
+          onChange(formatCoordinate(position.latitude), formatCoordinate(position.longitude));
+          setLinkMessage(null);
+        }}
+        onClose={() => setPicking(false)}
+      />
     </fieldset>
   );
 }

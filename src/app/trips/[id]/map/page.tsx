@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/ui/PlaceholderPage";
+import { MapScreen } from "@/components/map/MapScreen";
 
 export const metadata: Metadata = { title: "Map" };
 
 export default function Page() {
-  return (
-    <PlaceholderPage
-      title="Map"
-      description="The trip map will appear here."
-    />
-  );
+  return <MapScreen />;
 }

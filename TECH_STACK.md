@@ -155,6 +155,15 @@ If the user is offline and map tiles cannot load:
 The tile source and any API key are configured via public environment variables.
 Only keys intended for browser use may be exposed.
 
+Current setup:
+
+- Map library: MapLibre GL JS, behind the provider-neutral `MapView` component
+  (`src/components/map/`); what is shown is computed in `src/lib/map/mapModel.ts`.
+- Tiles: OpenFreeMap vector style (OpenStreetMap data, no API key), overridable via
+  `NEXT_PUBLIC_MAP_STYLE_URL` (any MapLibre style URL).
+- MapLibre's worker is copied to `public/vendor/maplibre-gl/<version>/` by
+  `scripts/copy-maplibre-worker.mjs` (runs before `dev` and `build`; generated, not committed).
+
 ---
 
 ## Place Search

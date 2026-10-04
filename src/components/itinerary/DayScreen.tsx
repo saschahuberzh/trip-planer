@@ -9,6 +9,7 @@ import { useAppRoute } from "@/lib/routing/useAppRoute";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { AlertIcon, ChevronLeftIcon, ChevronRightIcon, PencilIcon } from "@/components/ui/icons";
+import { DayMapPreview } from "@/components/map/DayMapPreview";
 import { DayPlacesCard } from "./DayPlacesCard";
 import { ItineraryDialogs, type ItineraryDialog } from "./ItineraryDialogs";
 import { dayLabel, formatDayDate, formatDayDateLong } from "./itineraryDisplay";
@@ -122,6 +123,8 @@ function DayContent({ itinerary, timeline, previous, next }: DayContentProps) {
       )}
 
       <DayPlacesCard tripId={trip.id} day={day} places={itinerary.places} />
+
+      <DayMapPreview itinerary={itinerary} tripDayId={day.id} />
 
       {day.notes !== undefined ? (
         <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">

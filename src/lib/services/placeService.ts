@@ -3,6 +3,7 @@
  * activities using each place), create/edit/delete, favorite/visited, and adding a
  * place to a day. See DATA_MODEL.md "Place".
  */
+import type { LatLng } from "@/lib/domain/coordinates";
 import { calendarDaysInclusive } from "@/lib/domain/dateTime";
 import type { Activity, Place, Trip, TripDay } from "@/lib/domain/types";
 import { EntityNotFoundError, getRepositories, type NewEntity, type Repositories } from "@/lib/repositories";
@@ -115,6 +116,11 @@ export function createPlaceService(repos: Repositories) {
         visited: input.visited,
         externalRef: input.externalRef,
       });
+    },
+
+    /** Sets (or with undefined removes) the place's coordinates, e.g. from the map picker. */
+    setPlaceLocation(id: string, location: LatLng | undefined): Promise<Place> {
+      return repos.places.update(id, { latitude: location?.latitude, longitude: location?.longitude });
     },
 
     setFavorite(id: string, favorite: boolean): Promise<Place> {

@@ -57,6 +57,12 @@ Use Chrome (DevTools → Application) or Safari.
    - In a day: "Visit a place" → pick the place → an activity named after it is added.
      In an activity's form: choose/remove a place. Place detail lists where it's used.
    - Delete the place → its activities stay with their title.
+7d. Map (Phase 6):
+   - Online: Map → Route shows places of the day numbered and connected; Day and
+     All places views work; tapping a marker opens the place panel; "Set position"
+     for a place without coordinates places it by tapping the map.
+   - Offline: the map area says it can't be shown; stops/places with coordinates are
+     still listed below; Plan, Places and editing keep working.
 8. Open an unknown path (e.g. `/nope`) → "You are offline" page.
 9. Update flow:
    - Go back online, change some visible text, `npm run build && npm run start`.
