@@ -2,6 +2,7 @@ import { getDatabase } from "@/lib/db/connection";
 import type { TravelDatabase } from "@/lib/db/database";
 import { createAccommodationRepository } from "./accommodationRepository";
 import { createAppMetaRepository } from "./appMetaRepository";
+import { createBackupRepository } from "./backupRepository";
 import { createBookingRepository } from "./bookingRepository";
 import { createExpenseRepository } from "./expenseRepository";
 import { createImageRepository } from "./imageRepository";
@@ -16,6 +17,7 @@ export * from "./errors";
 export { TripDayNotEmptyError } from "./tripDayRepository";
 export type { EntityPatch, NewEntity } from "./shared";
 export type { NewImageAsset } from "./imageRepository";
+export type { DomainSnapshot } from "./backupRepository";
 export type { NewTrip, TripPatch } from "./tripRepository";
 
 export function createRepositories(db: TravelDatabase) {
@@ -31,6 +33,7 @@ export function createRepositories(db: TravelDatabase) {
     images: createImageRepository(db),
     appMeta: createAppMetaRepository(db),
     safetyBackups: createSafetyBackupRepository(db),
+    backup: createBackupRepository(db),
     /**
      * Runs several repository calls atomically: if `fn` throws, nothing is written.
      * `fn` must only await repository calls (no fetches, timers or image decoding).

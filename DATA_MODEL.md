@@ -592,6 +592,7 @@ The backup format `version` is independent of the IndexedDB schema version.
 - On restore, images are decoded back to Blobs in the `images` table.
 - A missing or invalid image must not block restoring travel data;
   the referencing `coverImageId` is cleared and the user is informed.
+- Images that no trip references are not restored (they would be unreachable).
 
 ## Validation
 

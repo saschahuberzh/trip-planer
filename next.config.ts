@@ -30,7 +30,10 @@ function withServiceWorker(nextConfig: NextConfig): NextConfig {
   })(nextConfig);
 }
 
+const packageVersion = (JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as { version: string }).version;
+
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_APP_VERSION: packageVersion },
   async headers() {
     return [
       {

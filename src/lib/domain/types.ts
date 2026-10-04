@@ -260,5 +260,7 @@ export interface StoragePersistenceRecord {
 /** Typed AppMeta keys (non-domain, never included in backups). */
 export interface AppMetaValues {
   storagePersistence: StoragePersistenceRecord;
+  /** ISO 8601 UTC instant of the last JSON export. */
+  lastExportAt: string;
 }
 export type AppMetaKey = keyof AppMetaValues;

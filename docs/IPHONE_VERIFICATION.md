@@ -28,7 +28,9 @@ Requirements: iOS/iPadOS 15.4 or later (native `<dialog>`, CSS `:has()`,
 - [ ] Back online: map tiles and place search work again.
 - [ ] Update: deploy a new version → "Update available" appears in the app; "Reload" switches
       to it; trips are unchanged.
-- [ ] (After Phase 11) Settings → Storage shows the persistent storage status.
+- [ ] Settings → Storage shows the persistent storage status.
+- [ ] Settings → "Share / Save to Files" saves the backup JSON to Files; "Choose backup file"
+      picks it again from Files and restores it.
 
 ## Known iOS behaviour
 

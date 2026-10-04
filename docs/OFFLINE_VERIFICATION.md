@@ -83,6 +83,11 @@ Use Chrome (DevTools → Application) or Safari.
      Remaining "Incomplete – provisional CHF 2,665", "Not converted: KGS 1,200".
    - Add a rate to the KGS expense → Remaining is final. Category and per-day totals follow.
    - Edit the trip's base currency → confirmation lists the conversions that will be cleared.
+7h. Backup (Phase 11), offline:
+   - Settings → Download backup → a `travel-planner-backup-….json` file; "Last export" updates.
+   - In another browser profile (fresh installation): Settings → Choose backup file → the
+     summary lists the trips and counts → "Replace my data" → trips are back, a safety
+     backup is listed. An invalid file shows the problems and changes nothing.
 8. Open an unknown path (e.g. `/nope`) → "You are offline" page.
 9. Update flow:
    - Go back online, change some visible text, `npm run build && npm run start`.
@@ -98,6 +103,8 @@ Use Chrome (DevTools → Application) or Safari.
 - `e2e/offline.spec.ts` – the acceptance test of IMPLEMENTATION_PLAN.md Phase 10: open online,
   create a trip, close, go offline, start again → the trip is there and editable; a trip
   created offline opens in every section (full navigations served from route templates).
+- `e2e/backup.spec.ts` – export (offline) as a download, restore into a fresh installation,
+  an invalid file is refused without changes.
 - `e2e/features-offline.spec.ts` – offline use of every feature: places (search reports
   offline, manual entry works), places of the day, activities, transport, map fallback,
   accommodation, bookings, expenses; data survives an offline reload.

@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/ui/PlaceholderPage";
+import { SettingsScreen } from "@/components/settings/SettingsScreen";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default function Page() {
-  return (
-    <PlaceholderPage
-      title="Settings"
-      description="Backup, storage and app information will appear here."
-    />
-  );
+  return <SettingsScreen />;
 }

@@ -1,4 +1,6 @@
 export const APP_NAME = "Travel Planner";
+/** From package.json (set in next.config.ts); "dev" in tests. */
+export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "dev";
 export const APP_SHORT_NAME = "Travel";
 export const APP_DESCRIPTION = "Plan trips day by day: itinerary, places, map, bookings and budget. Works offline.";
 export const THEME_COLOR = "#0f766e";
