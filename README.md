@@ -251,7 +251,7 @@ A cloud account must never be required to access locally stored trips.
 
 Deployment
 
-Production hosting will use Vercel.
+Production hosting uses Vercel: see `docs/DEPLOYMENT.md`.
 
 The production version must be tested for:
 
@@ -280,6 +280,8 @@ Requires Node.js 22 LTS (`.nvmrc`) and npm.
 * `npm run dev` – development server (service worker disabled)
 * `npm run build && npm run start` – production build (webpack, required by Serwist) with service worker
 * `npm run typecheck`, `npm run lint`, `npm test`
+* `npm run verify:deployment -- <URL>` – checks a deployment (HTTPS, sw.js headers,
+  manifest, icons, every precached URL); `--allow-http` for a local production build
 * `npm run test:e2e` – production build + Playwright tests of the offline/PWA flows
   (needs Playwright's Chromium: `npx playwright install chromium`, or an installed Chrome
   with `PLAYWRIGHT_CHANNEL=chrome npm run test:e2e`)

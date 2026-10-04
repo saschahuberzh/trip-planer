@@ -37,10 +37,24 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Updates must be detected: the browser always revalidates the service worker.
         source: "/sw.js",
         headers: [
           { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
           { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+      {
+        // Versioned path (scripts/copy-maplibre-worker.mjs): safe to cache forever.
+        source: "/vendor/maplibre-gl/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
     ];
