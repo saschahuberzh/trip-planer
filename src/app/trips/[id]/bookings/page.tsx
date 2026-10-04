@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/ui/PlaceholderPage";
+import { BookingsScreen } from "@/components/bookings/BookingsScreen";
 
 export const metadata: Metadata = { title: "Bookings" };
 
 export default function Page() {
-  return (
-    <PlaceholderPage
-      title="Bookings"
-      description="Bookings will appear here."
-    />
-  );
+  return <BookingsScreen />;
 }

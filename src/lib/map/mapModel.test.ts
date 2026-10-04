@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
-import type { Activity, Place, Transport, Trip, TripDay } from "@/lib/domain/types";
+import type { Accommodation, Activity, Place, Transport, Trip, TripDay } from "@/lib/domain/types";
 import type { TimelineEntry } from "@/lib/services/itineraryOrdering";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
-import { allPlacesModel, boundsOf, dayModel, formatDayRanges, placeDayNumbers, routeModel } from "./mapModel";
+import {
+  allPlacesModel,
+  boundsOf,
+  dayModel,
+  formatDayRanges,
+  placeDayNumbers,
+  routeModel,
+  type MapModel,
+  type PlaceMarker,
+} from "./mapModel";
 
 const meta = { createdAt: "2026-10-03T19:00:00.000Z", updatedAt: "2026-10-03T19:00:00.000Z" };
 
@@ -47,7 +56,7 @@ const places = [
   place("Cafe", [39.66, 66.96], "restaurant"),
 ];
 
-function itinerary(days: DayTimeline[], outsideDays: DayTimeline[] = []): Itinerary {
+function itinerary(days: DayTimeline[], outsideDays: DayTimeline[] = [], accommodations: Accommodation[] = []): Itinerary {
   return {
     trip: {
       id: "t",
@@ -63,8 +72,22 @@ function itinerary(days: DayTimeline[], outsideDays: DayTimeline[] = []): Itiner
     outsideDays,
     unplanned: [],
     places: new Map(places.map((p) => [p.id, p])),
+    accommodations,
   };
 }
+
+function stay(
+  id: string,
+  checkInDate: string,
+  checkOutDate: string,
+  location: { placeId: string } | { latitude: number; longitude: number } | Record<string, never> = {},
+): Accommodation {
+  return { id, tripId: "t", name: id, checkInDate, checkOutDate, ...location, ...meta };
+}
+
+const placeMarkers = (model: MapModel) => model.markers.filter((marker): marker is PlaceMarker => marker.kind === "place");
+const stayIds = (model: MapModel) =>
+  model.markers.flatMap((marker) => (marker.kind === "stay" ? [marker.accommodationId] : []));
 
 const ids = (items: { place: Place }[]) => items.map((item) => item.place.id);
 
@@ -89,11 +112,11 @@ describe("routeModel", () => {
     ]);
     expect(model.segments).toHaveLength(3);
     expect(model.segments.every((segment) => segment.transport === undefined)).toBe(true);
-    // One marker per place, with all its stop numbers.
-    expect(model.markers.map((marker) => [marker.placeId, marker.label])).toEqual([
-      ["Tashkent", "1, 4"],
-      ["Samarkand", "2"],
-      ["Bukhara", "3"],
+    // One marker per place, labelled with the days spent there (not the stop numbers).
+    expect(placeMarkers(model).map((marker) => [marker.placeId, marker.label])).toEqual([
+      ["Tashkent", "1–3, 7"],
+      ["Samarkand", "3–4"],
+      ["Bukhara", "6"],
     ]);
   });
 
@@ -137,7 +160,7 @@ describe("dayModel", () => {
       "d1",
     );
     expect(model.stops.map((stop) => stop.place.id)).toEqual(["Samarkand", "Registan", "Samarkand"]);
-    expect(model.markers.find((marker) => marker.placeId === "Samarkand")?.label).toBe("1, 3");
+    expect(placeMarkers(model).find((marker) => marker.placeId === "Samarkand")?.label).toBe("1, 3");
   });
 
   it("supports days outside the trip dates and unknown days", () => {
@@ -154,22 +177,22 @@ describe("allPlacesModel", () => {
     day(3, ["Samarkand"], [activity("b", "Registan", 0)]),
   ]);
 
-  it("labels places with their days and marks unplanned places", () => {
-    const markers = allPlacesModel(trip).markers.map((marker) => [marker.placeId, marker.label, marker.tone]);
+  it("shows places without day labels, keeps their days and marks unplanned places", () => {
+    const markers = placeMarkers(allPlacesModel(trip)).map((marker) => [marker.placeId, marker.label, marker.dayNumbers, marker.tone]);
     expect(markers).toEqual([
-      ["Bukhara", "", "unplanned"],
-      ["Cafe", "", "unplanned"],
-      ["Registan", "2–3", "planned"],
-      ["Samarkand", "2–3", "planned"],
-      ["Tashkent", "1", "planned"],
+      ["Bukhara", "", [], "unplanned"],
+      ["Cafe", "", [], "unplanned"],
+      ["Registan", "", [2, 3], "planned"],
+      ["Samarkand", "", [2, 3], "planned"],
+      ["Tashkent", "", [1], "planned"],
     ]);
     expect(allPlacesModel(trip).unlocated.map((p) => p.id)).toEqual(["Secret"]);
     expect(allPlacesModel(trip).segments).toEqual([]);
   });
 
   it("filters by day and category", () => {
-    expect(allPlacesModel(trip, { tripDayId: "d2" }).markers.map((m) => m.placeId)).toEqual(["Registan", "Samarkand"]);
-    expect(allPlacesModel(trip, { type: "attraction" }).markers.map((m) => m.placeId)).toEqual(["Registan"]);
+    expect(placeMarkers(allPlacesModel(trip, { tripDayId: "d2" })).map((m) => m.placeId)).toEqual(["Registan", "Samarkand"]);
+    expect(placeMarkers(allPlacesModel(trip, { type: "attraction" })).map((m) => m.placeId)).toEqual(["Registan"]);
     expect(allPlacesModel(trip, { type: "attraction" }).unlocated.map((p) => p.id)).toEqual(["Secret"]);
   });
 
@@ -246,5 +269,39 @@ describe("transport connections", () => {
     expect(model.stops.map((stop) => stop.place.id)).toEqual(["Samarkand"]);
     expect(model.segments).toEqual([]);
     expect(model.unlocated.map((place) => place.id)).toEqual(["Secret"]);
+  });
+});
+
+describe("accommodation markers", () => {
+  // Day numbers map to dates 2026-06-(10 + n).
+  const hotel = stay("Hotel", "2026-06-11", "2026-06-13", { latitude: 41.31, longitude: 69.28 });
+  const guesthouse = stay("Guesthouse", "2026-06-13", "2026-06-15", { placeId: "Samarkand" });
+  const unlocated = stay("Yurt camp", "2026-06-15", "2026-06-16");
+  const days = [day(1, ["Tashkent"]), day(2, ["Tashkent"]), day(3, ["Tashkent", "Samarkand"]), day(4, ["Samarkand"])];
+  const trip = itinerary(days, [], [hotel, guesthouse, unlocated]);
+
+  it("keeps the route to its stops: no accommodations", () => {
+    expect(stayIds(routeModel(trip))).toEqual([]);
+    expect(routeModel(trip).markers.every((marker) => marker.kind === "place")).toBe(true);
+  });
+
+  it("shows the accommodations of the day (check-out, nights, check-in)", () => {
+    expect(stayIds(dayModel(trip, "d3"))).toEqual(["Hotel"]);
+    expect(stayIds(dayModel(trip, "d2"))).toEqual(["Hotel"]);
+    expect(stayIds(dayModel(itinerary([day(4, [], [])], [], [hotel, guesthouse]), "d4"))).toEqual(["Guesthouse"]);
+  });
+
+  it("shows a place used by an accommodation once, as the accommodation", () => {
+    const model = allPlacesModel(trip);
+    expect(stayIds(model)).toEqual(["Hotel", "Guesthouse"]);
+    expect(placeMarkers(model).some((marker) => marker.placeId === "Samarkand")).toBe(false);
+    const guesthouseMarker = model.markers.find((marker) => marker.kind === "stay" && marker.accommodationId === "Guesthouse");
+    expect(guesthouseMarker).toMatchObject({ latitude: 39.65, longitude: 66.97 });
+  });
+
+  it("filters accommodations by day and treats them as hotels", () => {
+    expect(stayIds(allPlacesModel(trip, { tripDayId: "d4" }))).toEqual(["Guesthouse"]);
+    expect(stayIds(allPlacesModel(trip, { type: "attraction" }))).toEqual([]);
+    expect(stayIds(allPlacesModel(trip, { type: "hotel" }))).toEqual(["Hotel", "Guesthouse"]);
   });
 });

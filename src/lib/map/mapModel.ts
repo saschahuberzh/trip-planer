@@ -3,7 +3,8 @@
  * markers, the connecting line, the numbered stop list and places without coordinates.
  */
 import type { LatLng } from "@/lib/domain/coordinates";
-import type { Place, PlaceType, Transport, TransportType } from "@/lib/domain/types";
+import type { Accommodation, Place, PlaceType, Transport, TransportType } from "@/lib/domain/types";
+import { staysOnDate } from "@/lib/services/accommodationSchedule";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
 
 export const MAP_VIEW_MODES = ["route", "day", "all"] as const;
@@ -11,15 +12,30 @@ export type MapViewMode = (typeof MAP_VIEW_MODES)[number];
 
 export type LocatedPlace = Place & LatLng;
 
-export interface MapMarker extends LatLng {
+export interface PlaceMarker extends LatLng {
+  kind: "place";
   placeId: string;
   name: string;
   type: PlaceType;
-  /** Text inside the marker: stop numbers ("1", "2, 5") or day numbers ("1–3"). Empty for none. */
+  /**
+   * Text inside the marker: days in the route view ("1–3, 7"), stop numbers in the day
+   * view ("1", "2, 5"). Empty in the all places view (the category symbol is shown).
+   */
   label: string;
+  /** Days of the trip the place is used on (for lists and details). */
+  dayNumbers: number[];
   /** "unplanned" places are drawn in a neutral style. */
   tone: "planned" | "unplanned";
 }
+
+/** An accommodation (at its linked place or its own coordinates); not numbered. */
+export interface StayMarker extends LatLng {
+  kind: "stay";
+  accommodationId: string;
+  name: string;
+}
+
+export type MapMarker = PlaceMarker | StayMarker;
 
 /** A straight segment between two consecutive stops; `transport` when a transport connects them. */
 export interface MapSegment {
@@ -68,27 +84,63 @@ function unique<T>(items: Iterable<T>): T[] {
 
 const toLatLng = (place: LocatedPlace): LatLng => ({ latitude: place.latitude, longitude: place.longitude });
 
+/** Where an accommodation is: its linked place (authoritative) or its own coordinates. */
+export function stayPosition(accommodation: Accommodation, places: ReadonlyMap<string, Place>): LatLng | undefined {
+  if (accommodation.placeId !== undefined) {
+    const place = places.get(accommodation.placeId);
+    return place && isLocated(place) ? toLatLng(place) : undefined;
+  }
+  if (accommodation.latitude === undefined || accommodation.longitude === undefined) return undefined;
+  return { latitude: accommodation.latitude, longitude: accommodation.longitude };
+}
+
+/** Markers for accommodations with a position, skipping those at places already shown. */
+function stayMarkers(
+  accommodations: readonly Accommodation[],
+  places: ReadonlyMap<string, Place>,
+  shownPlaceIds: ReadonlySet<string>,
+): StayMarker[] {
+  return accommodations.flatMap((accommodation): StayMarker[] => {
+    if (accommodation.placeId !== undefined && shownPlaceIds.has(accommodation.placeId)) return [];
+    const position = stayPosition(accommodation, places);
+    return position ? [{ kind: "stay", accommodationId: accommodation.id, name: accommodation.name, ...position }] : [];
+  });
+}
+
 /**
- * Turns an ordered list of stops into markers (one per place, all its numbers) and segments.
+ * Turns an ordered list of stops into markers (one per place) and segments. Markers are
+ * labelled with the stop numbers ("numbers") or with the days covered ("days").
  * `connectionInto(i)` returns the transport arriving at stop i from stop i - 1, if any.
  */
-function fromStops(stops: MapStop[], unlocated: Place[], connectionInto: (index: number) => Transport | undefined): MapModel {
-  const byPlace = new Map<string, MapMarker>();
+function fromStops(
+  stops: MapStop[],
+  unlocated: Place[],
+  labels: "numbers" | "days",
+  connectionInto: (index: number) => Transport | undefined,
+): MapModel {
+  const byPlace = new Map<string, PlaceMarker>();
+  const numbers = new Map<string, number[]>();
   for (const stop of stops) {
+    numbers.set(stop.place.id, [...(numbers.get(stop.place.id) ?? []), stop.number]);
     const existing = byPlace.get(stop.place.id);
     if (existing) {
-      existing.label = `${existing.label}, ${stop.number}`;
+      existing.dayNumbers = unique([...existing.dayNumbers, ...stop.dayNumbers]);
       continue;
     }
     byPlace.set(stop.place.id, {
+      kind: "place",
       placeId: stop.place.id,
       name: stop.place.name,
       type: stop.place.type,
       latitude: stop.place.latitude,
       longitude: stop.place.longitude,
-      label: String(stop.number),
+      label: "",
+      dayNumbers: [...stop.dayNumbers],
       tone: "planned",
     });
+  }
+  for (const marker of byPlace.values()) {
+    marker.label = labels === "days" ? formatDayRanges(marker.dayNumbers) : (numbers.get(marker.placeId) ?? []).join(", ");
   }
   const segments = stops.slice(1).map((stop, i): MapSegment => {
     const transport = connectionInto(i + 1);
@@ -136,7 +188,7 @@ export function routeModel(itinerary: Itinerary): MapModel {
   }
   // A segment shows a transport going from its first to its second stop on a day between them.
   const transports = datedTransports(itinerary);
-  return fromStops(stops, [...unlocated.values()], (index) => {
+  return fromStops(stops, [...unlocated.values()], "days", (index) => {
     const from = stops[index - 1];
     const to = stops[index];
     const earliest = Math.max(...from.dayNumbers);
@@ -206,15 +258,20 @@ export function dayModel(itinerary: Itinerary, tripDayId: string): MapModel {
   const nodes = dayPlaceNodes(timeline, itinerary.places);
   const located = nodes.filter((node): node is DayNode & { place: LocatedPlace } => isLocated(node.place));
   const dayNumbers = timeline.dayNumber === null ? [] : [timeline.dayNumber];
-  return fromStops(
+  const model = fromStops(
     located.map((node, index) => ({ number: index + 1, place: node.place, dayNumbers })),
     unique(nodes.map((node) => node.place).filter((place) => !isLocated(place))),
+    "numbers",
     (index) => {
       const transport = located[index].arrivedBy;
       // Only when the previous stop shown is really where the transport left from.
       return transport?.originPlaceId === located[index - 1].place.id ? transport : undefined;
     },
   );
+  // Where you sleep before and after this day (check-out, night, check-in).
+  const stays = staysOnDate(itinerary.accommodations, timeline.day.date).map((stay) => stay.accommodation);
+  const shown = new Set(located.map((node) => node.place.id));
+  return { ...model, markers: [...model.markers, ...stayMarkers(stays, itinerary.places, shown)] };
 }
 
 /** Day numbers (within the trip dates) on which each place is used: as place of the day or by an activity. */
@@ -237,33 +294,52 @@ export interface AllPlacesFilter {
 }
 
 /**
- * All places view: every place with coordinates, labelled with the days it is used on;
- * unplanned places are neutral. Optionally limited to one day and/or one category.
+ * All places view: every place with coordinates (unlabelled; the category symbol is shown),
+ * unplanned places neutral, plus accommodations. Optionally limited to one day (its places
+ * and the accommodations of that date) and/or one category (accommodations count as hotels).
  */
 export function allPlacesModel(itinerary: Itinerary, filter: AllPlacesFilter = {}): MapModel {
   const daysByPlace = placeDayNumbers(itinerary);
   let places = [...itinerary.places.values()];
+  let stays: readonly Accommodation[] = itinerary.accommodations;
   if (filter.tripDayId !== undefined) {
     const timeline = [...itinerary.days, ...itinerary.outsideDays].find((candidate) => candidate.day.id === filter.tripDayId);
     const onDay = new Set(timeline === undefined ? [] : dayPlaceSequence(timeline, itinerary.places).map((place) => place.id));
     places = places.filter((place) => onDay.has(place.id));
+    stays = timeline === undefined ? [] : staysOnDate(stays, timeline.day.date).map((stay) => stay.accommodation);
   }
-  if (filter.type !== undefined) places = places.filter((place) => place.type === filter.type);
+  if (filter.type !== undefined) {
+    places = places.filter((place) => place.type === filter.type);
+    if (filter.type !== "hotel") stays = [];
+  }
   places.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
-  const markers = places.filter(isLocated).map((place): MapMarker => {
-    const days = daysByPlace.get(place.id) ?? [];
-    return {
-      placeId: place.id,
-      name: place.name,
-      type: place.type,
-      latitude: place.latitude,
-      longitude: place.longitude,
-      label: formatDayRanges(days),
-      tone: days.length > 0 ? "planned" : "unplanned",
-    };
-  });
-  return { markers, segments: [], stops: [], unlocated: places.filter((place) => !isLocated(place)) };
+  // A place that is an accommodation's location is shown once, as the accommodation.
+  const stayMarkerList = stayMarkers(stays, itinerary.places, new Set());
+  const stayPlaceIds = new Set(stays.flatMap((stay) => (stay.placeId === undefined ? [] : [stay.placeId])));
+  const placeMarkers = places
+    .filter(isLocated)
+    .filter((place) => !stayPlaceIds.has(place.id))
+    .map((place): PlaceMarker => {
+      const days = daysByPlace.get(place.id) ?? [];
+      return {
+        kind: "place",
+        placeId: place.id,
+        name: place.name,
+        type: place.type,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        label: "",
+        dayNumbers: days,
+        tone: days.length > 0 ? "planned" : "unplanned",
+      };
+    });
+  return {
+    markers: [...placeMarkers, ...stayMarkerList],
+    segments: [],
+    stops: [],
+    unlocated: places.filter((place) => !isLocated(place)),
+  };
 }
 
 /** South-west and north-east corners of the points, or undefined when there are none. */

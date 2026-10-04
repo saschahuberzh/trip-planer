@@ -2,7 +2,6 @@
  * Create/edit transport form: raw values, validation and conversion to TransportInput.
  * Kept free of React so it can be tested directly. See SCREENS.md "Create / Edit Transport".
  */
-import { isCurrencyCode } from "@/lib/domain/currency";
 import {
   durationMinutes,
   isCalendarDate,
@@ -13,7 +12,7 @@ import {
 import type { LocalDateTime, Transport, TransportType } from "@/lib/domain/types";
 import { optionalText, normalizeTimeInput, UNPLANNED_VALUE } from "./itineraryForms";
 import type { TransportInput } from "./itineraryService";
-import { parseAmount } from "./tripForm";
+import { parsePriceInput } from "./priceInput";
 
 export const MAX_TRANSPORT_TEXT_LENGTH = 120;
 
@@ -74,7 +73,8 @@ export function emptyTransportFormValues(tripDayId: string | undefined, timeZone
   };
 }
 
-function dateTimeValues(value: LocalDateTime | undefined, fallbackZone: string): LocalDateTimeValues {
+/** Form values of an optional LocalDateTime (empty date/time with `fallbackZone` when unset). */
+export function toLocalDateTimeValues(value: LocalDateTime | undefined, fallbackZone: string): LocalDateTimeValues {
   return value === undefined
     ? emptyDateTime(fallbackZone)
     : { date: localDatePart(value), time: localTimePart(value), timeZone: value.timeZone };
@@ -85,8 +85,8 @@ export function transportToFormValues(transport: Transport, fallbackZone: string
     type: transport.type,
     origin: { placeId: transport.originPlaceId, text: transport.originText ?? "" },
     destination: { placeId: transport.destinationPlaceId, text: transport.destinationText ?? "" },
-    departure: dateTimeValues(transport.departure, fallbackZone),
-    arrival: dateTimeValues(transport.arrival, transport.departure?.timeZone ?? fallbackZone),
+    departure: toLocalDateTimeValues(transport.departure, fallbackZone),
+    arrival: toLocalDateTimeValues(transport.arrival, transport.departure?.timeZone ?? fallbackZone),
     duration: transport.durationMinutes === undefined ? "" : formatDurationInput(transport.durationMinutes),
     price: transport.price === undefined ? "" : String(transport.price),
     currency: transport.currency ?? "",
@@ -116,8 +116,8 @@ export function parseDurationInput(text: string): number | null {
   return minutes !== null && minutes > 0 ? minutes : null;
 }
 
-/** "" when nothing entered, the LocalDateTime when complete, or an error message. */
-function parseDateTime(values: LocalDateTimeValues, label: string): LocalDateTime | undefined | string {
+/** undefined when nothing entered, the LocalDateTime when complete, or an error message. */
+export function parseLocalDateTimeInput(values: LocalDateTimeValues, label: string): LocalDateTime | undefined | string {
   const time = normalizeTimeInput(values.time);
   const hasDate = values.date.trim() !== "";
   if (!hasDate && time === "") return undefined;
@@ -142,8 +142,8 @@ export function validateTransportForm(values: TransportFormValues): TransportFor
   if (typeof origin === "string") errors.origin = origin;
   if (typeof destination === "string") errors.destination = destination;
 
-  const departure = parseDateTime(values.departure, "departure");
-  const arrival = parseDateTime(values.arrival, "arrival");
+  const departure = parseLocalDateTimeInput(values.departure, "departure");
+  const arrival = parseLocalDateTimeInput(values.arrival, "arrival");
   if (typeof departure === "string") errors.departure = departure;
   if (typeof arrival === "string") errors.arrival = arrival;
   if (typeof departure === "object" && typeof arrival === "object" && durationMinutes(departure, arrival) < 0) {
@@ -157,17 +157,8 @@ export function validateTransportForm(values: TransportFormValues): TransportFor
     else duration = parsed;
   }
 
-  let price: number | undefined;
-  let currency: string | undefined;
-  if (values.price.trim() !== "") {
-    const amount = parseAmount(values.price);
-    if (amount === null) errors.price = "Enter an amount like 25 or 25.50.";
-    else if (!isCurrencyCode(values.currency)) errors.price = "Choose a currency.";
-    else {
-      price = amount.value;
-      currency = values.currency;
-    }
-  }
+  const price = parsePriceInput(values.price, values.currency);
+  if (!price.ok) errors.price = price.error;
 
   const bookingReference = optionalText(values.bookingReference);
   if (bookingReference !== undefined && bookingReference.length > MAX_TRANSPORT_TEXT_LENGTH) {
@@ -179,7 +170,8 @@ export function validateTransportForm(values: TransportFormValues): TransportFor
     typeof origin === "string" ||
     typeof destination === "string" ||
     typeof departure === "string" ||
-    typeof arrival === "string"
+    typeof arrival === "string" ||
+    !price.ok
   ) {
     return { ok: false, errors };
   }
@@ -194,8 +186,8 @@ export function validateTransportForm(values: TransportFormValues): TransportFor
       departure,
       arrival,
       durationMinutes: duration,
-      price,
-      currency,
+      price: price.price,
+      currency: price.currency,
       bookingReference,
       notes: optionalText(values.notes),
     },

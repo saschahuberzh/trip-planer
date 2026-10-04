@@ -8,8 +8,9 @@ import { appRoutePath } from "@/lib/routing/routes";
 import { useAppRoute } from "@/lib/routing/useAppRoute";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
 import { Button, buttonClass } from "@/components/ui/Button";
-import { AlertIcon, ChevronLeftIcon, ChevronRightIcon, PencilIcon } from "@/components/ui/icons";
+import { AlertIcon, ChevronLeftIcon, ChevronRightIcon, PencilIcon, PlusIcon } from "@/components/ui/icons";
 import { DayMapPreview } from "@/components/map/DayMapPreview";
+import { StaysOnDay } from "@/components/accommodation/StaysOnDay";
 import { DayPlacesCard } from "./DayPlacesCard";
 import { ItineraryDialogs, type ItineraryDialog } from "./ItineraryDialogs";
 import { dayLabel, formatDayDate, formatDayDateLong } from "./itineraryDisplay";
@@ -123,6 +124,27 @@ function DayContent({ itinerary, timeline, previous, next }: DayContentProps) {
       )}
 
       <DayPlacesCard tripId={trip.id} day={day} places={itinerary.places} />
+
+      <section aria-labelledby="day-stay-heading" className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+        <h3 id="day-stay-heading" className="px-4 pt-3 pb-2 text-sm font-semibold text-slate-500">
+          Accommodation
+        </h3>
+        <StaysOnDay
+          accommodations={itinerary.accommodations}
+          date={day.date}
+          onOpen={(accommodation) => setDialog({ type: "edit-accommodation", accommodation })}
+        />
+        <div className="p-2">
+          <Button
+            variant="ghost"
+            onClick={() => setDialog({ type: "create-accommodation", checkInDate: day.date })}
+            className="w-full text-teal-700"
+          >
+            <PlusIcon />
+            Add accommodation
+          </Button>
+        </div>
+      </section>
 
       <DayMapPreview itinerary={itinerary} tripDayId={day.id} />
 

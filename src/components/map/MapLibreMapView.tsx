@@ -17,7 +17,8 @@ import { boundsOf, type MapMarker, type MapSegment } from "@/lib/map/mapModel";
 import { MAP_STYLE_URL } from "@/lib/map/config";
 import type { LatLng } from "@/lib/domain/coordinates";
 import { TRANSPORT_SYMBOLS, TRANSPORT_TYPE_LABELS } from "@/components/itinerary/transportDisplay";
-import { MARKER_COLORS, ROUTE_LINE_COLOR, UNPLANNED_MARKER_COLOR } from "./markerColors";
+import { PLACE_TYPE_SYMBOLS } from "@/components/places/placeDisplay";
+import { MARKER_COLORS, ROUTE_LINE_COLOR, STAY_MARKER_COLOR, UNPLANNED_MARKER_COLOR } from "./markerColors";
 import type { MapViewProps } from "./types";
 
 // MapLibre derives its worker URL from import.meta.url, which bundling breaks;
@@ -29,32 +30,43 @@ const WORLD: LatLng = { latitude: 30, longitude: 20 };
 
 type Status = "loading" | "ready" | "failed";
 
-function markerElement(marker: MapMarker, selected: boolean, onSelect?: (id: string) => void): HTMLElement {
-  const element = document.createElement(onSelect ? "button" : "div");
+/** Text and colour of a marker: days/numbers, else the category symbol; 🛏️ for accommodation. */
+function markerLook(marker: MapMarker): { text: string; color: string; ariaLabel: string } {
+  if (marker.kind === "stay") return { text: "🛏️", color: STAY_MARKER_COLOR, ariaLabel: `${marker.name} (accommodation)` };
   const color = marker.tone === "unplanned" ? UNPLANNED_MARKER_COLOR : MARKER_COLORS[marker.type];
-  const size = marker.label.length > 3 ? "auto" : "28px";
+  return marker.label === ""
+    ? { text: PLACE_TYPE_SYMBOLS[marker.type], color, ariaLabel: marker.name }
+    : { text: marker.label, color, ariaLabel: `${marker.name} (${marker.label})` };
+}
+
+function markerElement(marker: MapMarker, selected: boolean, onSelect?: () => void): HTMLElement {
+  const element = document.createElement(onSelect ? "button" : "div");
+  const { text, color, ariaLabel } = markerLook(marker);
+  const wide = text.length > 3;
   Object.assign(element.style, {
     minWidth: "28px",
-    width: size,
+    width: wide ? "auto" : "28px",
     height: "28px",
-    padding: marker.label.length > 3 ? "0 7px" : "0",
+    padding: wide ? "0 7px" : "0",
     borderRadius: "999px",
     background: color,
     color: "white",
-    font: "600 12px/28px system-ui, -apple-system, sans-serif",
+    font: "600 12px/24px system-ui, -apple-system, sans-serif",
     textAlign: "center",
+    whiteSpace: "nowrap",
     border: "2px solid white",
     boxShadow: selected ? `0 0 0 3px ${color}, 0 2px 6px rgb(0 0 0 / 0.35)` : "0 1px 4px rgb(0 0 0 / 0.35)",
     cursor: onSelect ? "pointer" : "default",
-    zIndex: selected ? "2" : "1",
+    // Accommodations sit below places, so day labels stay readable where they overlap.
+    zIndex: selected ? "3" : marker.kind === "stay" ? "1" : "2",
   });
-  element.textContent = marker.label;
-  element.setAttribute("aria-label", marker.label ? `${marker.name} (${marker.label})` : marker.name);
+  element.textContent = text;
+  element.setAttribute("aria-label", ariaLabel);
   if (onSelect) {
     element.setAttribute("type", "button");
     element.addEventListener("click", (event) => {
       event.stopPropagation();
-      onSelect(marker.placeId);
+      onSelect();
     });
   }
   return element;
@@ -113,7 +125,9 @@ export default function MapLibreMapView({
   markers,
   segments = [],
   selectedPlaceId = null,
+  selectedStayId = null,
   onSelectPlace,
+  onSelectStay,
   onSelectTransport,
   fitKey,
   initialCenter,
@@ -128,10 +142,12 @@ export default function MapLibreMapView({
   // Latest callbacks, so map listeners registered once always call the current ones.
   const onSelectRef = useRef(onSelectPlace);
   const onSelectTransportRef = useRef(onSelectTransport);
+  const onSelectStayRef = useRef(onSelectStay);
   const pickerRef = useRef(picker);
   useEffect(() => {
     onSelectRef.current = onSelectPlace;
     onSelectTransportRef.current = onSelectTransport;
+    onSelectStayRef.current = onSelectStay;
     pickerRef.current = picker;
   });
 
@@ -194,10 +210,16 @@ export default function MapLibreMapView({
     if (!map) return;
     const created: Marker[] = [];
     for (const marker of markers) {
+      const selectable = !picker && (marker.kind === "place" ? onSelectPlace : onSelectStay) !== undefined;
       const element = markerElement(
         marker,
-        marker.placeId === selectedPlaceId,
-        onSelectPlace && !picker ? (id) => onSelectRef.current?.(id) : undefined,
+        marker.kind === "place" ? marker.placeId === selectedPlaceId : marker.accommodationId === selectedStayId,
+        selectable
+          ? () =>
+              marker.kind === "place"
+                ? onSelectRef.current?.(marker.placeId)
+                : onSelectStayRef.current?.(marker.accommodationId)
+          : undefined,
       );
       created.push(new Marker({ element }).setLngLat([marker.longitude, marker.latitude]).addTo(map));
     }
@@ -225,7 +247,7 @@ export default function MapLibreMapView({
       );
     }
     return () => created.forEach((marker) => marker.remove());
-  }, [markers, segments, selectedPlaceId, onSelectPlace, onSelectTransport, picker, status]);
+  }, [markers, segments, selectedPlaceId, selectedStayId, onSelectPlace, onSelectStay, onSelectTransport, picker, status]);
 
   // Connecting segments (need the style): one layer per line style.
   useEffect(() => {

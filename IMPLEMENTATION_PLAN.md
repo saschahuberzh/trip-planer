@@ -292,6 +292,10 @@ Accommodation CRUD (place-linked vs. own location fields).
 ACCOM-002
 Accommodation itinerary integration (shown on nights within check-in/check-out).
 
+ACCOM-003
+Accommodation on the map (SCREENS.md "Map": 🛏️ markers in Day and All places views; the Route view shows only the route).
+Route markers show days instead of stop numbers; All places markers show the category symbol.
+
 BOOK-001
 Booking CRUD (optional link to transport, accommodation or activity).
 

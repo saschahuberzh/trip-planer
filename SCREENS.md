@@ -219,9 +219,10 @@ Full-screen or near-full-screen map.
 
 Views:
 
-- **Route**: the places of the day of all days in chronological order, numbered and connected
-  with straight lines. Consecutive days at the same place are merged into one stop
-  (e.g. "Day 1–2 · Tashkent"). Days without places of the day are skipped.
+- **Route**: the places of the day of all days in chronological order, connected with straight
+  lines. Markers and the stop list are labelled with the days spent there (e.g. "1–3, 7"),
+  not with stop numbers, for an overview of the days. Consecutive days at the same place are
+  merged into one stop (e.g. "Day 1–2 · Tashkent"). Days without places of the day are skipped.
   A segment between two consecutive stops that a transport connects (origin → destination,
   on a day within the segment's days) shows that transport's symbol at its midpoint.
 - **Day**: one selected day — its timeline in order (activity places; for transports their origin
@@ -235,8 +236,20 @@ Connections (transport):
 - Line style: flights dotted, all other connections solid, segments without a transport dashed.
 - Tapping a symbol opens the transport's details (type, origin → destination, local times,
   duration, booking reference) with a link to edit it.
-- **All places**: every place with coordinates, coloured/labelled by the day(s) it is used on
-  (places of the day or activities); unplanned places in a neutral style. Filter by day.
+- **All places**: every place with coordinates, coloured by category and showing its category
+  symbol (no day labels on the markers; the list below names the days); unplanned places in a
+  neutral style. Filter by day and category.
+
+Accommodation on the map:
+
+- Accommodations with a position (their linked place, else their own coordinates) are shown
+  as 🛏️ markers, not numbered and not part of the lines.
+- Route: none — it shows only the route (stops with their days and the connections).
+  Day: those of that date (check-out, night, check-in).
+  All places: all, or those of the selected day; the category filter treats them as hotels.
+- A place used as an accommodation's location is shown once, as the accommodation
+  (in the Day view a stop at that place is shown as the stop).
+- Tapping opens the accommodation's details (dates, nights, location) with a link to it.
 
 Controls:
 
@@ -390,7 +403,9 @@ A "create expense" shortcut from those entities may prefill an expense.
 
 # 10. Accommodation
 
-Displays all accommodation chronologically.
+Displays all accommodation chronologically, with how many nights of the trip have no accommodation.
+Accommodation is also shown on the days of the stay (check-in / night x of y / check-out)
+and on the map (see "Map").
 
 Each entry:
 

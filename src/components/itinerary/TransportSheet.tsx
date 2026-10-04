@@ -1,7 +1,7 @@
 "use client";
 
-import { useId, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { deviceTimeZone, durationMinutes, formatDurationMinutes, isCalendarDate } from "@/lib/domain/dateTime";
+import { useMemo, useState, type FormEvent } from "react";
+import { deviceTimeZone, durationMinutes, formatDurationMinutes } from "@/lib/domain/dateTime";
 import { TRANSPORT_TYPES, type Place, type Transport } from "@/lib/domain/types";
 import { UNPLANNED_VALUE } from "@/lib/services/itineraryForms";
 import { getItineraryService, type DayTimeline, type Itinerary } from "@/lib/services/itineraryService";
@@ -17,11 +17,13 @@ import {
 } from "@/lib/services/transportForm";
 import { Button } from "@/components/ui/Button";
 import { CloseIcon, MapPinIcon, TrashIcon } from "@/components/ui/icons";
+import { ConfirmBody } from "@/components/ui/ConfirmBody";
 import { Sheet } from "@/components/ui/Sheet";
-import { CurrencySelect, Field, inputClass } from "@/components/trips/formFields";
+import { LocalDateTimeFields } from "@/components/forms/LocalDateTimeFields";
+import { PriceField } from "@/components/forms/PriceField";
+import { Field, inputClass } from "@/components/trips/formFields";
 import { PlacePickerSheet } from "@/components/places/PlacePickerSheet";
 import { dayOptionLabel } from "./itineraryDisplay";
-import { TimeZoneSelect } from "./TimeZoneSelect";
 import { TRANSPORT_SYMBOLS, TRANSPORT_TYPE_LABELS } from "./transportDisplay";
 
 export type TransportSheetTarget =
@@ -130,8 +132,6 @@ function TransportForm({ itinerary, target, onBusyChange, onSaved, onCancel, onD
       if (departure.date !== current.departure.date) {
         const day = dayChoices.find((timeline) => timeline.day.date === departure.date);
         if (day) next.tripDayId = day.day.id;
-        // Arrival usually on the same date; suggest it while it's empty.
-        if (current.arrival.date === "") next.arrival = { ...current.arrival, date: departure.date };
       }
       return next;
     });
@@ -242,7 +242,7 @@ function TransportForm({ itinerary, target, onBusyChange, onSaved, onCancel, onD
         onChange={(destination) => set("destination", destination)}
       />
 
-      <DateTimeFields
+      <LocalDateTimeFields
         label="Departure"
         fallbackDate={referenceDate}
         value={values.departure}
@@ -250,13 +250,21 @@ function TransportForm({ itinerary, target, onBusyChange, onSaved, onCancel, onD
         suggestedZones={suggestedZones}
         onChange={setDeparture}
       />
-      <DateTimeFields
+      <LocalDateTimeFields
         label="Arrival"
         fallbackDate={values.departure.date || referenceDate}
         value={values.arrival}
         error={errors.arrival}
         suggestedZones={[values.departure.timeZone, ...suggestedZones]}
-        onChange={(arrival) => set("arrival", arrival)}
+        onChange={(arrival) =>
+          // Arrival is usually on the departure date: use it once an arrival time is entered.
+          set(
+            "arrival",
+            arrival.time !== "" && arrival.date === "" && values.departure.date !== ""
+              ? { ...arrival, date: values.departure.date }
+              : arrival,
+          )
+        }
       />
       <p className="-mt-3 text-sm text-slate-500">Local times as on the ticket. Time zones matter for flights.</p>
 
@@ -308,29 +316,13 @@ function TransportForm({ itinerary, target, onBusyChange, onSaved, onCancel, onD
         )}
       </Field>
 
-      <Field label="Price (optional)" error={errors.price} hint="For your information only; not counted in the budget.">
-        {(props) => (
-          <div className="flex gap-2">
-            <input
-              {...props}
-              value={values.price}
-              onChange={(event) => set("price", event.target.value)}
-              inputMode="decimal"
-              placeholder="e.g. 25"
-              autoComplete="off"
-              className={`${inputClass} flex-1`}
-            />
-            <div className="w-28 shrink-0">
-              <CurrencySelect
-                id={`${props.id}-currency`}
-                aria-invalid={false}
-                value={values.currency}
-                onChange={(currency) => set("currency", currency)}
-              />
-            </div>
-          </div>
-        )}
-      </Field>
+      <PriceField
+        amount={values.price}
+        currency={values.currency}
+        error={errors.price}
+        onAmountChange={(price) => set("price", price)}
+        onCurrencyChange={(currency) => set("currency", currency)}
+      />
 
       <Field label="Booking reference (optional)" error={errors.bookingReference}>
         {(props) => (
@@ -462,72 +454,6 @@ function EndField({
   );
 }
 
-function DateTimeFields({
-  label,
-  fallbackDate,
-  value,
-  error,
-  suggestedZones,
-  onChange,
-}: {
-  label: string;
-  /** Date for the time zone offsets while no date is entered. */
-  fallbackDate: string;
-  value: LocalDateTimeValues;
-  error?: string;
-  suggestedZones: readonly string[];
-  onChange: (value: LocalDateTimeValues) => void;
-}) {
-  const id = useId();
-  const hasValue = value.date !== "" || value.time !== "";
-  return (
-    <fieldset className="space-y-1.5" aria-describedby={error ? `${id}-error` : undefined}>
-      <legend className="flex w-full items-center justify-between text-sm font-medium text-slate-700">
-        {label} (optional)
-        {hasValue && (
-          <button
-            type="button"
-            onClick={() => onChange({ ...value, date: "", time: "" })}
-            className="min-h-9 px-2 text-sm font-semibold text-slate-500"
-          >
-            Clear
-          </button>
-        )}
-      </legend>
-      <div className="grid grid-cols-[3fr_2fr] gap-2">
-        <input
-          type="date"
-          aria-label={`${label} date`}
-          aria-invalid={error !== undefined}
-          value={value.date}
-          onChange={(event) => onChange({ ...value, date: event.target.value })}
-          className={inputClass}
-        />
-        <input
-          type="time"
-          aria-label={`${label} time`}
-          aria-invalid={error !== undefined}
-          value={value.time}
-          onChange={(event) => onChange({ ...value, time: event.target.value })}
-          className={inputClass}
-        />
-      </div>
-      <TimeZoneSelect
-        aria-label={`${label} time zone`}
-        value={value.timeZone}
-        suggested={suggestedZones}
-        date={isCalendarDate(value.date) ? value.date : fallbackDate}
-        onChange={(timeZone) => onChange({ ...value, timeZone })}
-      />
-      {error && (
-        <p id={`${id}-error`} className="text-sm text-red-600">
-          {error}
-        </p>
-      )}
-    </fieldset>
-  );
-}
-
 function DeleteTransport({
   transport,
   onBusyChange,
@@ -614,44 +540,5 @@ function SuggestDayPlaces({
       <strong className="text-slate-900">{timeline ? dayOptionLabel(timeline, itinerary.places) : "this day"}</strong> to{" "}
       <strong className="text-slate-900">{names}</strong>? They form your route on the map.
     </ConfirmBody>
-  );
-}
-
-function ConfirmBody({
-  children,
-  error,
-  busy,
-  cancelLabel,
-  confirmLabel,
-  danger = false,
-  onCancel,
-  onConfirm,
-}: {
-  children: ReactNode;
-  error: string | null;
-  busy: boolean;
-  cancelLabel: string;
-  confirmLabel: string;
-  danger?: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div className="space-y-4 pb-[env(safe-area-inset-bottom)] text-slate-700">
-      <p>{children}</p>
-      {error && (
-        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-      <div className="flex gap-3">
-        <Button variant="secondary" onClick={onCancel} disabled={busy} className="flex-1">
-          {cancelLabel}
-        </Button>
-        <Button variant={danger ? "danger" : "primary"} onClick={onConfirm} disabled={busy} className="flex-1">
-          {confirmLabel}
-        </Button>
-      </div>
-    </div>
   );
 }

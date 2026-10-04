@@ -1,11 +1,12 @@
 "use client";
 
-import type { Activity, Transport, TripDay } from "@/lib/domain/types";
+import type { Accommodation, Activity, Transport, TripDay } from "@/lib/domain/types";
 import { entryRef, type TimelineEntry } from "@/lib/services/itineraryOrdering";
 import { getItineraryService, type DayTimeline, type Itinerary } from "@/lib/services/itineraryService";
 import { getPlaceService } from "@/lib/services/placeService";
 import { PlacePickerSheet } from "@/components/places/PlacePickerSheet";
 import { TripFormSheet } from "@/components/trips/TripFormSheet";
+import { AccommodationSheet } from "@/components/accommodation/AccommodationSheet";
 import { ActivitySheet } from "./ActivitySheet";
 import { DayDetailsSheet, DeleteOutsideDaySheet } from "./DaySheets";
 import { entryTitle, formatDayDate } from "./itineraryDisplay";
@@ -22,6 +23,8 @@ export type ItineraryDialog =
   | { type: "edit-day"; day: TripDay }
   | { type: "move-day-entries"; timeline: DayTimeline }
   | { type: "delete-day"; timeline: DayTimeline }
+  | { type: "create-accommodation"; checkInDate: string }
+  | { type: "edit-accommodation"; accommodation: Accommodation }
   | { type: "edit-trip" };
 
 type ItineraryDialogsProps = {
@@ -121,6 +124,20 @@ export function ItineraryDialogs({ itinerary, dialog, onClose, onDayDeleted }: I
             ? { mode: "create", tripDayId: dialog.tripDayId }
             : dialog?.type === "edit-transport"
               ? { mode: "edit", transport: dialog.transport }
+              : null
+        }
+        onClose={onClose}
+      />
+
+      <AccommodationSheet
+        tripId={trip.id}
+        baseCurrency={trip.baseCurrency}
+        places={itinerary.places}
+        target={
+          dialog?.type === "create-accommodation"
+            ? { mode: "create", checkInDate: dialog.checkInDate }
+            : dialog?.type === "edit-accommodation"
+              ? { mode: "edit", accommodation: dialog.accommodation }
               : null
         }
         onClose={onClose}

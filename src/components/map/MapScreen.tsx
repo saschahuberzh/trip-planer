@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { formatCoordinates } from "@/lib/domain/coordinates";
-import { PLACE_TYPES, type Place, type PlaceType, type Transport } from "@/lib/domain/types";
+import { PLACE_TYPES, type Accommodation, type Place, type PlaceType, type Transport } from "@/lib/domain/types";
+import { nightsOf } from "@/lib/services/accommodationSchedule";
 import { useItinerary } from "@/lib/hooks/useItinerary";
 import {
   allPlacesModel,
@@ -25,7 +26,8 @@ import { ChevronRightIcon, CloseIcon, MapPinIcon } from "@/components/ui/icons";
 import { inputClass } from "@/components/trips/formFields";
 import { dayOptionLabel } from "@/components/itinerary/itineraryDisplay";
 import { ItineraryMessage, ItinerarySkeleton, TripNotFound } from "@/components/itinerary/PlanScreen";
-import { PLACE_TYPE_BADGE, PLACE_TYPE_LABELS } from "@/components/places/placeDisplay";
+import { PLACE_TYPE_BADGE, PLACE_TYPE_LABELS, PLACE_TYPE_SYMBOLS } from "@/components/places/placeDisplay";
+import { stayDates, stayLocation } from "@/components/accommodation/stayDisplay";
 import { TransportSheet } from "@/components/itinerary/TransportSheet";
 import {
   TRANSPORT_SYMBOLS,
@@ -83,13 +85,21 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedTransportId, setSelectedTransportId] = useState<string | null>(null);
   const [editingTransport, setEditingTransport] = useState<Transport | null>(null);
+  const [selectedStayId, setSelectedStayId] = useState<string | null>(null);
   const selectPlace = useCallback((id: string | null) => {
     setSelectedId(id);
     setSelectedTransportId(null);
+    setSelectedStayId(null);
   }, []);
   const selectTransport = useCallback((id: string) => {
     setSelectedTransportId(id);
     setSelectedId(null);
+    setSelectedStayId(null);
+  }, []);
+  const selectStay = useCallback((id: string) => {
+    setSelectedStayId(id);
+    setSelectedId(null);
+    setSelectedTransportId(null);
   }, []);
   const [fitRequest, setFitRequest] = useState(0);
   const [locating, setLocating] = useState<Place | null>(null);
@@ -100,6 +110,7 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
     setState(next);
     setSelectedId(null);
     setSelectedTransportId(null);
+    setSelectedStayId(null);
     const params = new URLSearchParams({ view: next.view });
     if (next.dayId !== undefined && next.view !== "route") params.set("day", next.dayId);
     window.history.replaceState(window.history.state, "", `?${params.toString()}`);
@@ -113,6 +124,8 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
 
   const daysByPlace = useMemo(() => placeDayNumbers(itinerary), [itinerary]);
   const selected = selectedId === null ? undefined : places.get(selectedId);
+  const selectedStay =
+    selectedStayId === null ? undefined : itinerary.accommodations.find((stay) => stay.id === selectedStayId);
   const selectedTransport = selectedTransportId === null ? undefined : findTransport([...days, ...outsideDays], selectedTransportId);
   const fitKey = `${state.view}|${state.dayId ?? ""}|${state.type ?? ""}|${fitRequest}`;
   const allLocated = [...places.values()].filter(isLocated);
@@ -172,7 +185,9 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
           markers={model.markers}
           segments={model.segments}
           selectedPlaceId={selectedId}
+          selectedStayId={selectedStayId}
           onSelectPlace={selectPlace}
+          onSelectStay={selectStay}
           onSelectTransport={selectTransport}
           fitKey={fitKey}
           initialCenter={placesCenter(allLocated)}
@@ -208,6 +223,15 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
         />
       )}
 
+      {selectedStay !== undefined && (
+        <SelectedStay
+          tripId={trip.id}
+          accommodation={selectedStay}
+          location={stayLocation(selectedStay, places)}
+          onClose={() => setSelectedStayId(null)}
+        />
+      )}
+
       <ViewEmptyState view={state.view} model={model} tripId={trip.id} hasPlaces={places.size > 0} />
 
       {model.stops.length > 0 && (
@@ -219,15 +243,18 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
                 onClick={() => selectPlace(stop.place.id)}
                 className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
               >
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-700 text-xs font-semibold text-white">
-                  {stop.number}
-                </span>
+                {state.view === "route" ? (
+                  <span className="flex h-7 min-w-14 shrink-0 items-center justify-center rounded-full bg-teal-700 px-2 text-xs font-semibold whitespace-nowrap text-white">
+                    {stop.dayNumbers.length > 0 ? `Day ${formatDayRanges(stop.dayNumbers)}` : "—"}
+                  </span>
+                ) : (
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-700 text-xs font-semibold text-white">
+                    {stop.number}
+                  </span>
+                )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium text-slate-900">{stop.place.name}</span>
-                  <span className="block truncate text-xs text-slate-500">
-                    {stop.dayNumbers.length > 0 && `Day ${formatDayRanges(stop.dayNumbers)} · `}
-                    <span className="font-mono">{formatCoordinates(stop.place)}</span>
-                  </span>
+                  <span className="block truncate font-mono text-xs text-slate-500">{formatCoordinates(stop.place)}</span>
                 </span>
               </button>
             </li>
@@ -237,26 +264,44 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
 
       {state.view === "all" && model.markers.length > 0 && (
         <ul className="divide-y divide-slate-100 overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200" aria-label="Places on the map">
-          {model.markers.map((marker) => (
-            <li key={marker.placeId}>
-              <button
-                type="button"
-                onClick={() => selectPlace(marker.placeId)}
-                className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium text-slate-900">{marker.name}</span>
-                  <span className="block truncate text-xs text-slate-500">
-                    {marker.label === "" ? "Not planned" : `Day ${marker.label}`} ·{" "}
-                    <span className="font-mono">{formatCoordinates(marker)}</span>
+          {model.markers.map((marker) =>
+            marker.kind === "place" ? (
+              <li key={`place:${marker.placeId}`}>
+                <button
+                  type="button"
+                  onClick={() => selectPlace(marker.placeId)}
+                  className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
+                >
+                  <span aria-hidden="true">{PLACE_TYPE_SYMBOLS[marker.type]}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium text-slate-900">{marker.name}</span>
+                    <span className="block truncate text-xs text-slate-500">
+                      {marker.dayNumbers.length === 0 ? "Not planned" : `Day ${formatDayRanges(marker.dayNumbers)}`} ·{" "}
+                      <span className="font-mono">{formatCoordinates(marker)}</span>
+                    </span>
                   </span>
-                </span>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PLACE_TYPE_BADGE[marker.type]}`}>
-                  {PLACE_TYPE_LABELS[marker.type]}
-                </span>
-              </button>
-            </li>
-          ))}
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PLACE_TYPE_BADGE[marker.type]}`}>
+                    {PLACE_TYPE_LABELS[marker.type]}
+                  </span>
+                </button>
+              </li>
+            ) : (
+              <li key={`stay:${marker.accommodationId}`}>
+                <button
+                  type="button"
+                  onClick={() => selectStay(marker.accommodationId)}
+                  className="flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left hover:bg-slate-50"
+                >
+                  <span aria-hidden="true">🛏️</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium text-slate-900">{marker.name}</span>
+                    <span className="block truncate font-mono text-xs text-slate-500">{formatCoordinates(marker)}</span>
+                  </span>
+                  <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800">Stay</span>
+                </button>
+              </li>
+            ),
+          )}
         </ul>
       )}
 
@@ -325,6 +370,50 @@ function SelectedPlace({ tripId, place, days, onClose }: { tripId: string; place
         type="button"
         onClick={onClose}
         aria-label="Close place details"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+      >
+        <CloseIcon />
+      </button>
+    </div>
+  );
+}
+
+function SelectedStay({
+  tripId,
+  accommodation,
+  location,
+  onClose,
+}: {
+  tripId: string;
+  accommodation: Accommodation;
+  location: string | undefined;
+  onClose: () => void;
+}) {
+  const nights = nightsOf(accommodation);
+  return (
+    <div className="flex gap-3 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-violet-200" aria-live="polite">
+      <span aria-hidden="true" className="text-2xl">
+        🛏️
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2 className="truncate text-lg font-semibold text-slate-900">{accommodation.name}</h2>
+        <p className="text-sm text-slate-600">{stayDates(accommodation)}</p>
+        <p className="text-sm text-slate-500">
+          {nights === 0 ? "No night" : nights === 1 ? "1 night" : `${nights} nights`}
+          {location !== undefined && ` · ${location}`}
+        </p>
+        <Link
+          href={appRoutePath({ name: "trip-section", tripId, section: "accommodation" })}
+          className="mt-2 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-teal-700"
+        >
+          Open accommodation
+          <ChevronRightIcon className="size-4" />
+        </Link>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close accommodation details"
         className="flex size-11 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
       >
         <CloseIcon />

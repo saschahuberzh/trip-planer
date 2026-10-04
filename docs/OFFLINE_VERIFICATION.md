@@ -70,6 +70,13 @@ Use Chrome (DevTools → Application) or Safari.
    - An overnight flight shows "+1"; arrival before departure is rejected.
    - Reorder/move it like an activity; delete it with confirmation.
    - Online: the Map's route segment between the two places shows the transport symbol.
+7f. Accommodation & bookings (Phase 8), offline:
+   - Accommodation → Add: link a place (or enter an address/coordinates), dates, times,
+     price, booking link → the card shows nights and location; the summary counts nights
+     without accommodation. Days show "Check-in / Night x of y / Check-out".
+   - Bookings → Add: link a transport → title, date/time, price and reference are filled in.
+     Bookings are grouped as Upcoming / Without date / Past; the linked entry opens its day.
+   - Delete an accommodation with a linked booking → the booking stays without the link.
 8. Open an unknown path (e.g. `/nope`) → "You are offline" page.
 9. Update flow:
    - Go back online, change some visible text, `npm run build && npm run start`.

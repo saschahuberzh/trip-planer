@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import type { Activity, Place, Transport } from "@/lib/domain/types";
+import type { Accommodation, Activity, Place, Transport } from "@/lib/domain/types";
 import { useItinerary } from "@/lib/hooks/useItinerary";
 import { appRoutePath } from "@/lib/routing/routes";
 import type { TimelineEntry } from "@/lib/services/itineraryOrdering";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { AlertIcon, ChevronRightIcon, InboxIcon, MapPinIcon } from "@/components/ui/icons";
+import { StaysOnDay } from "@/components/accommodation/StaysOnDay";
 import { ItineraryDialogs, type ItineraryDialog } from "./ItineraryDialogs";
 import { dayLabel, dayPlacesLabel, formatDayDate } from "./itineraryDisplay";
 import { TimelineList } from "./TimelineList";
@@ -32,6 +33,8 @@ export function PlanScreen() {
 function PlanContent({ itinerary }: { itinerary: Itinerary }) {
   const [dialog, setDialog] = useState<ItineraryDialog | null>(null);
   const { trip, days, outsideDays, unplanned } = itinerary;
+
+  const openAccommodation = (accommodation: Accommodation) => setDialog({ type: "edit-accommodation", accommodation });
 
   const timelineHandlers = (tripDayId: string | undefined) => ({
     onAdd: () => setDialog({ type: "create-activity", tripDayId }),
@@ -67,6 +70,8 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
               tripId={trip.id}
               timeline={timeline}
               places={itinerary.places}
+              accommodations={itinerary.accommodations}
+              onOpenAccommodation={openAccommodation}
               {...timelineHandlers(timeline.day.id)}
               outsideActions={
                 <div className="flex gap-2 border-t border-amber-100 p-2">
@@ -100,6 +105,8 @@ function PlanContent({ itinerary }: { itinerary: Itinerary }) {
             tripId={trip.id}
             timeline={timeline}
             places={itinerary.places}
+            accommodations={itinerary.accommodations}
+            onOpenAccommodation={openAccommodation}
             {...timelineHandlers(timeline.day.id)}
           />
         ))}
@@ -138,6 +145,8 @@ type DayCardProps = {
   tripId: string;
   timeline: DayTimeline;
   places: ReadonlyMap<string, Place>;
+  accommodations: readonly Accommodation[];
+  onOpenAccommodation: (accommodation: Accommodation) => void;
   onAdd: () => void;
   onOpenActivity: (activity: Activity) => void;
   onMoveEntry: (entry: TimelineEntry) => void;
@@ -146,7 +155,7 @@ type DayCardProps = {
   outsideActions?: ReactNode;
 };
 
-function DayCard({ tripId, timeline, outsideActions, ...handlers }: DayCardProps) {
+function DayCard({ tripId, timeline, outsideActions, accommodations, onOpenAccommodation, ...handlers }: DayCardProps) {
   const { day } = timeline;
   const placesLabel = dayPlacesLabel(day, handlers.places);
   return (
@@ -177,6 +186,7 @@ function DayCard({ tripId, timeline, outsideActions, ...handlers }: DayCardProps
         </div>
         <ChevronRightIcon className="size-5 shrink-0 text-slate-400" />
       </Link>
+      <StaysOnDay accommodations={accommodations} date={day.date} onOpen={onOpenAccommodation} />
       <TimelineList
         entries={timeline.entries}
         sortDate={{ tripDayId: day.id, date: day.date }}

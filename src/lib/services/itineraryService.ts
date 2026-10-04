@@ -5,7 +5,7 @@
  * repositories only store what this service computes.
  */
 import { calendarDaysInclusive } from "@/lib/domain/dateTime";
-import type { Activity, Place, Transport, Trip, TripDay } from "@/lib/domain/types";
+import type { Accommodation, Activity, Place, Transport, Trip, TripDay } from "@/lib/domain/types";
 import { EntityNotFoundError, getRepositories, type Repositories } from "@/lib/repositories";
 import {
   isSameEntry,
@@ -16,6 +16,7 @@ import {
   type TimelineEntry,
   type TimelineEntryRef,
 } from "./itineraryOrdering";
+import { sortAccommodations } from "./accommodationSchedule";
 import { isOutsideTripDates, syncTripDays } from "./tripDays";
 
 /** Activity fields edited by the user; `placeId` undefined = no place. */
@@ -52,6 +53,8 @@ export interface Itinerary {
   unplanned: TimelineEntry[];
   /** The trip's places by ID, for showing linked places. */
   places: ReadonlyMap<string, Place>;
+  /** The trip's accommodations, chronologically (shown on days via staysOnDate). */
+  accommodations: Accommodation[];
 }
 
 export class TripDayInRangeError extends Error {
@@ -175,11 +178,12 @@ export function createItineraryService(repos: Repositories) {
     async getItinerary(tripId: string): Promise<Itinerary | undefined> {
       const trip = await repos.trips.get(tripId);
       if (!trip) return undefined;
-      const [days, activities, transports, places] = await Promise.all([
+      const [days, activities, transports, places, accommodations] = await Promise.all([
         repos.tripDays.listByTrip(tripId),
         repos.activities.listByTrip(tripId),
         repos.transports.listByTrip(tripId),
         repos.places.listByTrip(tripId),
+        repos.accommodations.listByTrip(tripId),
       ]);
       const buckets = new Map<string | undefined, TimelineEntry[]>();
       const dayIds = new Set(days.map((day) => day.id));
@@ -198,6 +202,7 @@ export function createItineraryService(repos: Repositories) {
         outsideDays: timelines.filter((timeline) => timeline.outside),
         unplanned: sortTimeline(buckets.get(undefined) ?? []),
         places: new Map(places.map((place) => [place.id, place])),
+        accommodations: sortAccommodations(accommodations),
       };
     },
 

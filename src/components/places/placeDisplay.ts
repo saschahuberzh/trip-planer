@@ -11,6 +11,17 @@ export const PLACE_TYPE_LABELS: Record<PlaceType, string> = {
   custom: "Other",
 };
 
+/** Symbol per category, e.g. on map markers. */
+export const PLACE_TYPE_SYMBOLS: Record<PlaceType, string> = {
+  city: "🏙️",
+  attraction: "🏛️",
+  restaurant: "🍽️",
+  hotel: "🏨",
+  airport: "✈️",
+  train_station: "🚉",
+  custom: "📍",
+};
+
 export const PLACE_TYPE_BADGE: Record<PlaceType, string> = {
   city: "bg-indigo-100 text-indigo-800",
   attraction: "bg-rose-100 text-rose-800",

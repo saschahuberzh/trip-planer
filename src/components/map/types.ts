@@ -10,8 +10,11 @@ export interface MapViewProps {
   /** Straight segments between stops; segments with a transport show its symbol. */
   segments?: readonly MapSegment[];
   selectedPlaceId?: string | null;
+  selectedStayId?: string | null;
   /** Called with a place ID, or null when the empty map is tapped. */
   onSelectPlace?: (placeId: string | null) => void;
+  /** Called when an accommodation marker is tapped. */
+  onSelectStay?: (accommodationId: string) => void;
   /** Called when a transport symbol is tapped. */
   onSelectTransport?: (transportId: string) => void;
   /** The map fits to its markers/line whenever this value changes. */

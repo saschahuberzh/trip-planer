@@ -12,4 +12,5 @@ export const MARKER_COLORS: Record<PlaceType, string> = {
 };
 
 export const UNPLANNED_MARKER_COLOR = "#94a3b8";
+export const STAY_MARKER_COLOR = "#6d28d9";
 export const ROUTE_LINE_COLOR = "#0f766e";
