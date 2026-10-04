@@ -77,6 +77,12 @@ Use Chrome (DevTools → Application) or Safari.
    - Bookings → Add: link a transport → title, date/time, price and reference are filled in.
      Bookings are grouped as Upcoming / Without date / Past; the linked entry opens its day.
    - Delete an accommodation with a linked booking → the booking stays without the link.
+7g. Budget (Phase 9), offline:
+   - Trip with base currency CHF and budget 3000. Add 800000 UZS at rate 0.000065,
+     35000 KZT as "Amount in CHF" 63, 1200 KGS without rate, 220 CHF → Spent CHF 335,
+     Remaining "Incomplete – provisional CHF 2,665", "Not converted: KGS 1,200".
+   - Add a rate to the KGS expense → Remaining is final. Category and per-day totals follow.
+   - Edit the trip's base currency → confirmation lists the conversions that will be cleared.
 8. Open an unknown path (e.g. `/nope`) → "You are offline" page.
 9. Update flow:
    - Go back online, change some visible text, `npm run build && npm run start`.

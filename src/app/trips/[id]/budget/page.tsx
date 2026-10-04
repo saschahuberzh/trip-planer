@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/ui/PlaceholderPage";
+import { BudgetScreen } from "@/components/budget/BudgetScreen";
 
 export const metadata: Metadata = { title: "Budget" };
 
 export default function Page() {
-  return (
-    <PlaceholderPage
-      title="Budget"
-      description="Budget and expenses will appear here."
-    />
-  );
+  return <BudgetScreen />;
 }

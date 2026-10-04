@@ -1,3 +1,4 @@
+import { currencyMinorUnits } from "@/lib/domain/currency";
 import { calendarDaysInclusive, formatCalendarDateRange } from "@/lib/domain/dateTime";
 import type { Trip, TripStatus } from "@/lib/domain/types";
 
@@ -32,8 +33,19 @@ export function tripCountries(trip: Pick<Trip, "countries">): string {
   return trip.countries.join(" · ");
 }
 
+/**
+ * "CHF 3,000", "CHF 52.50", "UZS 800,000": whole amounts without decimals, others with the
+ * currency's precision (values are rounded for display only).
+ */
 export function formatMoney(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, { style: "currency", currency, minimumFractionDigits: 0 }).format(amount);
+  const digits = Number.isInteger(amount) ? 0 : currencyMinorUnits(currency);
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency,
+    currencyDisplay: "code",
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(amount);
 }
 
 export function currencyName(code: string): string {

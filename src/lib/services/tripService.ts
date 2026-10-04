@@ -28,8 +28,12 @@ export interface TripGroup {
 export interface TripChangePreview {
   /** Days with user data that would fall outside the new date range (kept, not deleted). */
   daysOutsideRange: TripDay[];
-  /** Expenses whose conversions refer to the current base currency, if it changes. */
-  affectedExpenseCount: number;
+  /** Whether the base currency changes. */
+  baseCurrencyChanges: boolean;
+  /** Converted expenses whose conversion would be cleared (they refer to the old base currency). */
+  clearedConversions: number;
+  /** Expenses already in the new base currency (they get rate 1). */
+  expensesInNewBase: number;
 }
 
 export interface TripUpdateResult {
@@ -105,20 +109,29 @@ export function createTripService(repos: Repositories) {
       change: Pick<TripInput, "startDate" | "endDate" | "baseCurrency">,
     ): Promise<TripChangePreview> {
       const trip = await repos.trips.get(id);
-      const currencyChanges = trip !== undefined && trip.baseCurrency !== change.baseCurrency;
+      const baseCurrencyChanges = trip !== undefined && trip.baseCurrency !== change.baseCurrency;
+      const expenses = baseCurrencyChanges ? await repos.expenses.listByTrip(id) : [];
+      const inNewBase = expenses.filter((expense) => expense.originalCurrency === change.baseCurrency);
       return {
         daysOutsideRange: await daysWithUserDataOutside(repos, id, change),
-        affectedExpenseCount: currencyChanges ? (await repos.expenses.listByTrip(id)).length : 0,
+        baseCurrencyChanges,
+        clearedConversions: expenses.filter(
+          (expense) => expense.originalCurrency !== change.baseCurrency && expense.exchangeRateToBase !== undefined,
+        ).length,
+        expensesInNewBase: inNewBase.length,
       };
     },
 
     /**
      * Updates the trip and synchronizes its TripDays: missing days are created,
      * empty days outside the range are deleted, days with user data are kept.
-     * A replaced or removed cover image is deleted.
+     * A replaced or removed cover image is deleted. A changed base currency updates the
+     * expenses' conversions (see tripRepository.changeBaseCurrency); the user confirms
+     * this beforehand (previewTripChange).
      */
     updateTrip(id: string, input: TripInput, cover: CoverImageChange): Promise<TripUpdateResult> {
       return repos.transaction(async () => {
+        await repos.trips.changeBaseCurrency(id, input.baseCurrency);
         let coverImageId: string | undefined;
         if (cover.type === "replace") coverImageId = (await repos.images.create(cover.image)).id;
         else if (cover.type === "keep") coverImageId = (await repos.trips.get(id))?.coverImageId;

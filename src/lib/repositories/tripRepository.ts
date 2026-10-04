@@ -70,6 +70,37 @@ export function createTripRepository(db: TravelDatabase) {
       });
     },
 
+    /**
+     * Changes the trip's base currency and, in the same transaction, its expenses'
+     * conversions (DATA_MODEL.md "Currency Conversion"): expenses in the new base currency
+     * get rate 1, all others become unconverted until the user enters new rates.
+     * Returns how many conversions were cleared.
+     */
+    changeBaseCurrency(id: string, baseCurrency: string): Promise<{ trip: Trip; clearedConversions: number }> {
+      return writeTransaction(db, async () => {
+        const existing = await db.trips.get(id);
+        if (!existing) throw new EntityNotFoundError("Trip", id);
+        if (existing.baseCurrency === baseCurrency) return { trip: existing, clearedConversions: 0 };
+        const updatedAt = nowInstant();
+        const trip: Trip = { ...existing, baseCurrency, updatedAt };
+        await check(trip);
+        await db.trips.put(trip);
+        let clearedConversions = 0;
+        await db.expenses.where("tripId").equals(id).modify((expense) => {
+          if (expense.originalCurrency === baseCurrency) {
+            expense.exchangeRateToBase = 1;
+            expense.amountInBaseCurrency = expense.originalAmount;
+          } else {
+            if (expense.exchangeRateToBase !== undefined) clearedConversions++;
+            delete expense.exchangeRateToBase;
+            delete expense.amountInBaseCurrency;
+          }
+          expense.updatedAt = updatedAt;
+        });
+        return { trip, clearedConversions };
+      });
+    },
+
     /** Deletes the trip, every entity it owns and its cover image, atomically. */
     delete(id: string): Promise<void> {
       return writeTransaction(db, async () => {

@@ -34,3 +34,13 @@ export function currencyMinorUnits(code: string): number {
   if (!isCurrencyCode(code)) throw new RangeError(`Unknown currency: ${code}`);
   return MINOR_UNITS[code] ?? 2;
 }
+
+/**
+ * Rounds to the currency's minor unit (e.g. CHF 2 decimals, JPY 0). Half away from zero;
+ * the epsilon nudge keeps values like 1.005 from rounding down due to binary floats.
+ */
+export function roundToCurrency(amount: number, code: string): number {
+  const factor = 10 ** currencyMinorUnits(code);
+  const rounded = Math.sign(amount) * Math.round(Math.abs(amount) * factor * (1 + Number.EPSILON)) / factor;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}

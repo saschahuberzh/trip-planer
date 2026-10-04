@@ -66,6 +66,8 @@ function TripForm({ trip, defaultBaseCurrency, onSavingChange, onSaved, onCancel
   const [saving, setSaving] = useState(false);
   // Days with user data the user agreed to keep outside the new dates.
   const [outsideDays, setOutsideDays] = useState<TripDay[] | null>(null);
+  // Base currency change the user is asked to confirm (expense conversions change).
+  const [currencyChange, setCurrencyChange] = useState<CurrencyChange | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   // Incremented on each failed submit so the first invalid field is brought into view.
   const [invalidSubmits, setInvalidSubmits] = useState(0);
@@ -82,6 +84,7 @@ function TripForm({ trip, defaultBaseCurrency, onSavingChange, onSaved, onCancel
     setValues((current) => ({ ...current, [key]: value }));
     setErrors((current) => (current[key] === undefined ? current : { ...current, [key]: undefined }));
     if (key === "startDate" || key === "endDate") setOutsideDays(null);
+    if (key === "baseCurrency") setCurrencyChange(null);
   };
 
   const setStartDate = (startDate: string) => {
@@ -118,16 +121,20 @@ function TripForm({ trip, defaultBaseCurrency, onSavingChange, onSaved, onCancel
         return;
       }
       const preview = await service.previewTripChange(trip.id, result.input);
-      if (preview.affectedExpenseCount > 0) {
-        setErrors({
-          baseCurrency: `This trip has ${preview.affectedExpenseCount} expense(s) converted to ${trip.baseCurrency}, so its base currency can't be changed yet.`,
-        });
-        setInvalidSubmits((count) => count + 1);
-        return;
-      }
-      if (preview.daysOutsideRange.length > 0 && outsideDays === null) {
+      const currencyAffects = preview.clearedConversions > 0 || preview.expensesInNewBase > 0;
+      const needsCurrencyConfirmation = preview.baseCurrencyChanges && currencyAffects && currencyChange === null;
+      const needsDaysConfirmation = preview.daysOutsideRange.length > 0 && outsideDays === null;
+      if (needsCurrencyConfirmation || needsDaysConfirmation) {
         // Tell the user before saving; the next submit confirms.
-        setOutsideDays(preview.daysOutsideRange);
+        if (needsCurrencyConfirmation) {
+          setCurrencyChange({
+            from: trip.baseCurrency,
+            to: result.input.baseCurrency,
+            cleared: preview.clearedConversions,
+            inNewBase: preview.expensesInNewBase,
+          });
+        }
+        if (needsDaysConfirmation) setOutsideDays(preview.daysOutsideRange);
         return;
       }
       onSaved((await service.updateTrip(trip.id, result.input, cover)).trip);
@@ -139,7 +146,15 @@ function TripForm({ trip, defaultBaseCurrency, onSavingChange, onSaved, onCancel
     }
   }
 
-  const submitLabel = saving ? "Saving…" : trip ? (outsideDays ? "Keep days and save" : "Save changes") : "Create trip";
+  const submitLabel = saving
+    ? "Saving…"
+    : !trip
+      ? "Create trip"
+      : currencyChange
+        ? "Change currency and save"
+        : outsideDays
+          ? "Keep days and save"
+          : "Save changes";
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -241,6 +256,7 @@ function TripForm({ trip, defaultBaseCurrency, onSavingChange, onSaved, onCancel
         )}
       </Field>
 
+      {currencyChange && <CurrencyChangeWarning change={currencyChange} />}
       {outsideDays && <OutsideDaysWarning days={outsideDays} />}
 
       {hasErrors && (
@@ -264,6 +280,40 @@ function TripForm({ trip, defaultBaseCurrency, onSavingChange, onSaved, onCancel
         </Button>
       </div>
     </form>
+  );
+}
+
+interface CurrencyChange {
+  from: string;
+  to: string;
+  /** Converted expenses whose conversion is cleared. */
+  cleared: number;
+  /** Expenses already in the new base currency (rate 1). */
+  inNewBase: number;
+}
+
+function CurrencyChangeWarning({ change }: { change: CurrencyChange }) {
+  const { from, to, cleared, inNewBase } = change;
+  return (
+    <div role="alert" className="flex gap-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-amber-200">
+      <AlertIcon className="size-5 shrink-0 text-amber-600" />
+      <div className="space-y-1">
+        <p className="font-semibold">
+          Change base currency from {from} to {to}?
+        </p>
+        {cleared > 0 && (
+          <p>
+            {cleared === 1 ? "1 expense conversion refers" : `${cleared} expense conversions refer`} to {from} and will be
+            cleared. Amounts in their original currency are kept; you can enter new rates to {to} later.
+          </p>
+        )}
+        {inNewBase > 0 && (
+          <p>
+            {inNewBase === 1 ? "1 expense is" : `${inNewBase} expenses are`} in {to} and will be counted at rate 1.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 

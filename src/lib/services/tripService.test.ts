@@ -147,11 +147,12 @@ describe("changing trip dates", () => {
       exchangeRateToBase: 1,
       amountInBaseCurrency: 40,
     });
-    // Changing the base currency with expenses is refused by the repository.
+    // An invalid date range fails after the base currency and the cover were changed.
     await expect(
-      service.updateTrip(trip.id, { ...input, baseCurrency: "EUR", endDate: "2026-06-20" }, { type: "replace", image: cover() }),
+      service.updateTrip(trip.id, { ...input, baseCurrency: "EUR", endDate: "2026-06-01" }, { type: "replace", image: cover() }),
     ).rejects.toThrow();
     expect(await repos.trips.get(trip.id)).toEqual(trip);
+    expect((await repos.expenses.listByTrip(trip.id))[0]).toMatchObject({ exchangeRateToBase: 1, amountInBaseCurrency: 40 });
     expect(await dayDates(trip.id)).toHaveLength(3);
     expect(await db.images.count()).toBe(0);
   });
@@ -159,16 +160,35 @@ describe("changing trip dates", () => {
   it("reports expenses affected by a base currency change", async () => {
     const trip = await service.createTrip(input);
     const range = { startDate: input.startDate, endDate: input.endDate };
-    await repos.expenses.create({
-      tripId: trip.id,
-      title: "Taxi",
-      category: "transport",
-      status: "paid",
-      originalAmount: 50000,
-      originalCurrency: "UZS",
+    const expense = { tripId: trip.id, title: "Taxi", category: "transport" as const, status: "paid" as const };
+    await repos.expenses.create({ ...expense, originalAmount: 50000, originalCurrency: "UZS" });
+    await repos.expenses.create({ ...expense, originalAmount: 40, originalCurrency: "CHF", exchangeRateToBase: 1, amountInBaseCurrency: 40 });
+    await repos.expenses.create({ ...expense, originalAmount: 10, originalCurrency: "EUR", exchangeRateToBase: 0.94, amountInBaseCurrency: 9.4 });
+    expect(await service.previewTripChange(trip.id, { ...range, baseCurrency: "CHF" })).toMatchObject({
+      baseCurrencyChanges: false,
+      clearedConversions: 0,
     });
-    expect((await service.previewTripChange(trip.id, { ...range, baseCurrency: "CHF" })).affectedExpenseCount).toBe(0);
-    expect((await service.previewTripChange(trip.id, { ...range, baseCurrency: "EUR" })).affectedExpenseCount).toBe(1);
+    expect(await service.previewTripChange(trip.id, { ...range, baseCurrency: "EUR" })).toMatchObject({
+      baseCurrencyChanges: true,
+      clearedConversions: 1,
+      expensesInNewBase: 1,
+    });
+  });
+
+  it("changes the base currency: rate 1 in the new currency, other conversions cleared", async () => {
+    const trip = await service.createTrip(input);
+    const expense = { tripId: trip.id, title: "X", category: "food" as const, status: "paid" as const };
+    const chf = await repos.expenses.create({ ...expense, originalAmount: 40, originalCurrency: "CHF", exchangeRateToBase: 1, amountInBaseCurrency: 40 });
+    const eur = await repos.expenses.create({ ...expense, originalAmount: 10, originalCurrency: "EUR", exchangeRateToBase: 0.94, amountInBaseCurrency: 9.4 });
+    const uzs = await repos.expenses.create({ ...expense, originalAmount: 50000, originalCurrency: "UZS" });
+    const { trip: updated } = await service.updateTrip(trip.id, { ...input, baseCurrency: "EUR" }, { type: "keep" });
+    expect(updated.baseCurrency).toBe("EUR");
+    const stored = Object.fromEntries((await repos.expenses.listByTrip(trip.id)).map((e) => [e.id, e]));
+    expect(stored[eur.id]).toMatchObject({ exchangeRateToBase: 1, amountInBaseCurrency: 10, originalAmount: 10 });
+    expect(stored[chf.id]).toMatchObject({ originalAmount: 40, originalCurrency: "CHF" });
+    expect(stored[chf.id]).not.toHaveProperty("exchangeRateToBase");
+    expect(stored[chf.id]).not.toHaveProperty("amountInBaseCurrency");
+    expect(stored[uzs.id]).not.toHaveProperty("amountInBaseCurrency");
   });
 });
 

@@ -1,5 +1,5 @@
 import { formatLocalDateTime } from "@/lib/domain/dateTime";
-import type { BookingLinkType, BookingType, LocalDateTime } from "@/lib/domain/types";
+import type { BookingLinkType, BookingType, ExpenseLinkType, LocalDateTime } from "@/lib/domain/types";
 import { appRoutePath } from "@/lib/routing/routes";
 import type { LinkedEntity } from "@/lib/services/bookingForm";
 import type { DayTimeline, Itinerary } from "@/lib/services/itineraryService";
@@ -43,10 +43,12 @@ export interface LinkOption {
   label: string;
   /** Where to open the linked entry. */
   href: string;
+  /** Day of the entry (YYYY-MM-DD), when it is on a day. */
+  date?: string;
   entity: LinkedEntity;
 }
 
-export function linkKey(type: BookingLinkType, id: string): string {
+export function linkKey(type: BookingLinkType | ExpenseLinkType, id: string): string {
   return `${type}:${id}`;
 }
 
@@ -72,6 +74,7 @@ export function bookingLinkOptions(itinerary: Itinerary): LinkOption[] {
           id: entry.item.id,
           label: `${title} · ${when}`,
           href,
+          date: timeline?.day.date,
           entity: { type: "transport", item: entry.item, title },
         });
       } else {
@@ -81,6 +84,7 @@ export function bookingLinkOptions(itinerary: Itinerary): LinkOption[] {
           id: entry.item.id,
           label: `${entry.item.title} · ${when}`,
           href,
+          date: timeline?.day.date,
           entity: { type: "activity", item: entry.item },
         });
       }
@@ -93,6 +97,7 @@ export function bookingLinkOptions(itinerary: Itinerary): LinkOption[] {
       id: accommodation.id,
       label: `${accommodation.name} · ${formatDayDate(accommodation.checkInDate)}`,
       href: appRoutePath({ name: "trip-section", tripId: trip.id, section: "accommodation" }),
+      date: accommodation.checkInDate,
       entity: { type: "accommodation", item: accommodation },
     });
   }
