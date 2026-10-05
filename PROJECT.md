@@ -425,15 +425,12 @@ Trip-only export is a possible future feature once a safe format is defined.
 
 ---
 
-## 7. Cloud Backup (Future)
+## 7. Cloud Backup (Dropbox)
 
-Cloud functionality is optional and not part of the first release. No cloud provider has been chosen.
+Cloud functionality is optional and off by default. The provider is Dropbox (client-side
+OAuth with PKCE, no custom backend), behind the CloudBackupProvider abstraction.
 
-V1 first delivers local JSON import/export. The architecture keeps a CloudBackupProvider abstraction so a provider can be added later, preferably with client-side authentication that requires no custom backend.
-
-Once implemented, Settings will contain:
-
-"Connect Cloud"
+Settings contains a switch "Automatic backup to Dropbox" (turning it on connects Dropbox).
 
 After authentication users can:
 
@@ -441,6 +438,9 @@ After authentication users can:
 - see the last backup time
 - restore a backup
 - disconnect the cloud account
+- back up automatically after changes (after edits pause, at most every 2 minutes, and when
+  the app is left); the 5 newest versions plus one per day for 14 days are kept
+- when another device backed up newer data, load it after confirmation (Replace)
 
 Cloud storage stores the same JSON backup format as local export.
 

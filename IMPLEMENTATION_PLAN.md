@@ -396,9 +396,21 @@ Acceptance criteria:
 
 ---
 
-# Phase 12 – Cloud Backup (Deferred)
+# Phase 12 – Cloud Backup (Dropbox)
 
-Not part of the first release. Requires a cloud provider decision first.
+Provider: Dropbox (decided 2026-10-05): free, OAuth with PKCE in the browser keeps a PWA
+connected via a refresh token (Microsoft's SPA refresh tokens expire after 24 hours; iCloud
+has no usable web API for a PWA). App folder access only. Optional and off by default.
+
+Beyond the tickets below: automatic backup after changes (switch in Settings), version
+thinning (5 newest + the last of each of the past 14 days), and newer data from another
+device is offered (Replace with confirmation, never merged; no silent upload over it).
+
+Limits: free Dropbox accounts have no monthly API call limit (the "data transport limit"
+applies to Business teams only), but a per-user rate limit (HTTP 429 + Retry-After). The app
+backs up only after 30 s without edits, at most every 2 minutes, right away when the app is
+left, checks for other devices' backups at most every 5 minutes, and waits as long as
+Dropbox asks after a 429 (lib/cloud/policy.ts).
 
 CLOUD-001
 Define CloudBackupProvider interface (no provider).
@@ -423,6 +435,9 @@ Restore backup using the same validation and Replace flow as local import, with 
 
 CLOUD-008
 Disconnect account.
+
+CLOUD-009
+Automatic backup after changes, version pruning, "newer data from another device" prompt.
 
 Cloud functionality must remain optional.
 

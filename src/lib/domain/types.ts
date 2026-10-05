@@ -265,10 +265,52 @@ export interface StoragePersistenceRecord {
   checkedAt: string;
 }
 
+/** OAuth tokens of the connected cloud account (this device only). */
+export interface CloudAuthTokens {
+  accessToken: string;
+  /** ISO 8601 UTC instant. */
+  accessTokenExpiresAt: string;
+  refreshToken: string;
+}
+
+/** An OAuth sign-in in progress (PKCE), kept until the provider redirects back. */
+export interface CloudConnectPending {
+  state: string;
+  codeVerifier: string;
+  startedAt: string;
+}
+
+/** The backup in the cloud that this device's data corresponds to (uploaded or restored). */
+export interface CloudSyncPoint {
+  fileName: string;
+  /** ISO 8601 UTC instant the backup was created. */
+  createdAt: string;
+  /** Signature of the local travel data at that point (see lib/cloud/signature.ts). */
+  signature: string;
+}
+
+/** Cloud backup settings and status (this device only). */
+export interface CloudBackupState {
+  provider: "dropbox";
+  /** Automatic backup after changes. */
+  enabled: boolean;
+  account?: { name: string; email?: string };
+  lastBackupAt?: string;
+  synced?: CloudSyncPoint;
+  lastError?: { at: string; message: string };
+  /** The provider asked to wait until then (rate limit); no requests before. */
+  backoffUntil?: string;
+}
+
 /** Typed AppMeta keys (non-domain, never included in backups). */
 export interface AppMetaValues {
   storagePersistence: StoragePersistenceRecord;
   /** ISO 8601 UTC instant of the last JSON export. */
   lastExportAt: string;
+  /** Random ID that names this device's cloud backups. */
+  deviceId: string;
+  cloudBackup: CloudBackupState;
+  cloudAuth: CloudAuthTokens;
+  cloudConnectPending: CloudConnectPending;
 }
 export type AppMetaKey = keyof AppMetaValues;

@@ -551,8 +551,16 @@ Examples:
 - last JSON export timestamp
 - storage persistence status
 - last safety backup timestamp
+- cloud backup: device ID, settings and status (`cloudBackup`, incl. the cloud backup this
+  device is in sync with), OAuth tokens (`cloudAuth`), a sign-in in progress
+  (`cloudConnectPending`)
 
-AppMeta is NOT included in backups and is not replaced by restore.
+AppMeta is NOT included in backups and is not replaced by restore (a restore never signs a
+device out of the cloud).
+
+Cloud backups (Dropbox) are the same JSON backup format as a local export, named
+`travel-planner-<UTC time>-<device label>-<device ID>.json`; the name tells when and on which
+device a backup was made, so newer data from another device is found without downloading.
 
 ---
 

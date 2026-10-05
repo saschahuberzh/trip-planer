@@ -24,8 +24,8 @@ its own origin with its own (empty) data. So:
   so updates are detected; the versioned MapLibre worker is cached long-term; basic security
   headers on all responses.
 - Environment variables: optional and public only, see `.env.example`
-  (`NEXT_PUBLIC_MAP_STYLE_URL`, `NEXT_PUBLIC_PHOTON_URL`). Never put secrets in
-  `NEXT_PUBLIC_*` variables — they end up in the browser bundle. V1 needs none.
+  (`NEXT_PUBLIC_MAP_STYLE_URL`, `NEXT_PUBLIC_PHOTON_URL`, `NEXT_PUBLIC_DROPBOX_APP_KEY`). Never
+  put secrets in `NEXT_PUBLIC_*` variables — they end up in the browser bundle. None is required.
 
 ## Steps
 
@@ -35,6 +35,20 @@ its own origin with its own (empty) data. So:
    are picked up; no changes needed. Environment variables: none required.
 3. **Deploy.** Every push to `main` deploys production; other branches get preview URLs.
 4. Optional: **Settings → Domains** to add your own domain (HTTPS is automatic).
+
+## Optional: cloud backup (Dropbox)
+
+1. https://www.dropbox.com/developers/apps → **Create app**: *Scoped access*, *App folder*,
+   a unique name (e.g. "Travel Planner <you>").
+2. **Permissions**: `files.metadata.read`, `files.content.read`, `files.content.write`,
+   `account_info.read` → **Submit**.
+3. **Settings → OAuth 2**: Redirect URIs `https://<your domain>/settings` (and
+   `http://localhost:3000/settings` for development); *Allow public clients (Implicit Grant
+   & PKCE)*: **Allow**. The app can stay in "Development" status for personal use.
+4. Copy the **App key** (not the secret) into Vercel → Settings → Environment Variables as
+   `NEXT_PUBLIC_DROPBOX_APP_KEY` (all environments) and redeploy. Locally: `.env.local`.
+
+Without the key, Settings shows cloud backup as "not set up"; everything else is unchanged.
 
 ## Verify the deployment
 

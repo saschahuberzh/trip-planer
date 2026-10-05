@@ -1,24 +1,20 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import type { BackupTable } from "@/lib/backup/format";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { backupFileName } from "@/lib/backup/serialize";
 import type { ValidBackup } from "@/lib/backup/validate";
 import { canShareFiles, downloadTextFile, shareTextFile } from "@/lib/files/saveFile";
 import { useLiveData } from "@/lib/hooks/useLiveData";
 import { APP_INFO, getBackupService } from "@/lib/services/backupService";
+import { getCloudBackupService } from "@/lib/services/cloudBackupService";
 import { Button } from "@/components/ui/Button";
-import { AlertIcon } from "@/components/ui/icons";
-
-/** Instants (metadata) are shown in the device's time zone. */
-function formatInstant(iso: string): string {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
-}
+import { CloudBackupSection } from "./CloudBackupSection";
+import { Alert, Card, formatInstant, RestoreConfirm } from "./settingsParts";
 
 const EXPORT_REMINDER_DAYS = 14;
 const noopSubscribe = () => () => {};
 
-/** Settings: data (export, import, safety backups), storage durability and app info. */
+/** Settings: data (export, import), cloud backup, safety backups, storage durability and app info. */
 export function SettingsScreen() {
   return (
     <section className="mx-auto max-w-md space-y-6 px-4 py-6 lg:max-w-6xl lg:px-8 lg:py-10">
@@ -26,6 +22,7 @@ export function SettingsScreen() {
       <div className="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
         <DataSection />
         <div className="space-y-6">
+          <CloudBackupSection />
           <SafetyBackupsSection />
           <StorageSection />
           <ApplicationSection />
@@ -35,33 +32,12 @@ export function SettingsScreen() {
   );
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section aria-label={title} className="space-y-3">
-      <h2 className="px-1 text-sm font-semibold tracking-wide text-slate-500 uppercase">{title}</h2>
-      <div className="space-y-3 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200">{children}</div>
-    </section>
-  );
-}
-
-function Alert({ tone, children }: { tone: "error" | "warning" | "success"; children: ReactNode }) {
-  const styles = {
-    error: "bg-red-50 text-red-800 ring-red-200",
-    warning: "bg-amber-50 text-amber-950 ring-amber-200",
-    success: "bg-emerald-50 text-emerald-900 ring-emerald-200",
-  }[tone];
-  return (
-    <div role={tone === "success" ? "status" : "alert"} className={`rounded-xl p-3 text-sm ring-1 ${styles}`}>
-      {children}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Data: export and import
 
 function DataSection() {
   const info = useLiveData(() => getBackupService().storageInfo(), []);
+  const cloud = useLiveData(() => getCloudBackupService().status(), []);
   const shareAvailable = useSyncExternalStore(noopSubscribe, canShareFiles, () => false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -90,10 +66,13 @@ function DataSection() {
   const lastExportAt = info.status === "ready" ? info.data.lastExportAt : undefined;
   // Only used once the data is loaded, which happens on the client.
   const [now] = useState(() => Date.now());
+  // A recent cloud backup counts as well: then no export reminder.
+  const lastCloudBackupAt = cloud.status === "ready" && cloud.data.connected ? cloud.data.lastBackupAt : undefined;
+  const lastSafeCopyAt = [lastExportAt, lastCloudBackupAt].filter((at) => at !== undefined).sort().at(-1);
   const stale =
     info.status === "ready" &&
     info.data.tripCount > 0 &&
-    (lastExportAt === undefined || now - new Date(lastExportAt).getTime() > EXPORT_REMINDER_DAYS * 86_400_000);
+    (lastSafeCopyAt === undefined || now - new Date(lastSafeCopyAt).getTime() > EXPORT_REMINDER_DAYS * 86_400_000);
 
   return (
     <Card title="Data">
@@ -110,7 +89,7 @@ function DataSection() {
       </div>
       {stale && (
         <Alert tone="warning">
-          {lastExportAt === undefined ? "You haven't exported a backup yet." : `Your last backup is older than ${EXPORT_REMINDER_DAYS} days.`}{" "}
+          {lastSafeCopyAt === undefined ? "You haven't exported a backup yet." : `Your last backup is older than ${EXPORT_REMINDER_DAYS} days.`}{" "}
           Export regularly and keep the file somewhere safe (e.g. Files, iCloud Drive or a computer).
         </Alert>
       )}
@@ -130,19 +109,6 @@ function DataSection() {
     </Card>
   );
 }
-
-const COUNT_LABELS: [BackupTable, string, string][] = [
-  ["trips", "trip", "trips"],
-  ["tripDays", "day", "days"],
-  ["places", "place", "places"],
-  ["activities", "activity", "activities"],
-  ["transports", "transport", "transports"],
-  ["accommodations", "accommodation", "accommodations"],
-  ["bookings", "booking", "bookings"],
-  ["expenses", "expense", "expenses"],
-  ["images", "photo", "photos"],
-  ["visitedCountries", "visited country", "visited countries"],
-];
 
 type ImportState =
   | { step: "idle" }
@@ -224,50 +190,14 @@ function ImportBackup() {
       )}
 
       {(state.step === "valid" || state.step === "restoring" || state.step === "failed") && (
-        <div className="space-y-3">
-          <Alert tone="success">
-            <p className="font-semibold">“{state.fileName}” is a valid backup.</p>
-            <p>
-              Exported {formatInstant(state.backup.summary.exportedAt)} (app {state.backup.summary.appVersion}).
-            </p>
-            <p className="mt-1">
-              {COUNT_LABELS.filter(([table]) => state.backup.summary.counts[table] > 0)
-                .map(([table, one, many]) => `${state.backup.summary.counts[table]} ${state.backup.summary.counts[table] === 1 ? one : many}`)
-                .join(" · ") || "No travel data"}
-            </p>
-            {state.backup.summary.tripNames.length > 0 && <p className="mt-1">Trips: {state.backup.summary.tripNames.join(", ")}</p>}
-          </Alert>
-          {state.backup.warnings.length > 0 && (
-            <Alert tone="warning">
-              <ul className="list-disc space-y-0.5 pl-5">
-                {state.backup.warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-            </Alert>
-          )}
-          <div className="flex gap-3 rounded-xl bg-red-50 p-3 text-sm text-red-900 ring-1 ring-red-200">
-            <AlertIcon className="size-5 shrink-0 text-red-600" />
-            <p>
-              <strong>All current data on this device will be replaced</strong> by this backup. A safety backup of the current
-              data is created first and listed below.
-            </p>
-          </div>
-          {state.step === "failed" && <Alert tone="error">The restore failed. Your existing data is unchanged.</Alert>}
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={reset} disabled={state.step === "restoring"} className="flex-1">
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => void restore(state.fileName, state.backup)}
-              disabled={state.step === "restoring"}
-              className="flex-1"
-            >
-              {state.step === "restoring" ? "Restoring…" : "Replace my data"}
-            </Button>
-          </div>
-        </div>
+        <RestoreConfirm
+          label={`“${state.fileName}”`}
+          backup={state.backup}
+          restoring={state.step === "restoring"}
+          failed={state.step === "failed"}
+          onCancel={reset}
+          onConfirm={() => void restore(state.fileName, state.backup)}
+        />
       )}
 
       {state.step === "done" && (

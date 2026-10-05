@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DatabaseStatusBanner } from "@/components/database/DatabaseStatusBanner";
+import { CloudBackupAgent } from "@/components/cloud/CloudBackupAgent";
 import { GlobalNav } from "@/components/navigation/GlobalNav";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0 lg:pl-56">{children}</main>
         <GlobalNav />
         <UpdatePrompt />
+        <CloudBackupAgent />
       </body>
     </html>
   );

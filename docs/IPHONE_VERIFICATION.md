@@ -32,6 +32,17 @@ Requirements: iOS/iPadOS 15.4 or later (native `<dialog>`, CSS `:has()`,
 - [ ] Settings → "Share / Save to Files" saves the backup JSON to Files; "Choose backup file"
       picks it again from Files and restores it.
 
+Cloud backup (only with `NEXT_PUBLIC_DROPBOX_APP_KEY` set):
+
+- [ ] From the Home Screen app: Settings → turn on "Automatic backup to Dropbox" → the
+      Dropbox sign-in opens ("Continue with Apple" / Face ID works) → after "Allow" the app is
+      back in Settings and shows "Dropbox is connected". (Standalone PWAs open the sign-in in
+      an in-app browser; check that the return lands in the app, not in Safari.)
+- [ ] An edit is backed up a few seconds later ("Last backup" updates).
+- [ ] Back up on the Mac, then open the app on the iPhone → "Newer data in Dropbox" →
+      "Load it" → the Mac's data is shown; Settings → Safety backups has the previous data.
+- [ ] Airplane Mode: editing works; the backup happens once back online.
+
 ## Known iOS behaviour
 
 - Data of an installed PWA is separate from Safari's data for the same site.

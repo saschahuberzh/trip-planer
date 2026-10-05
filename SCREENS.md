@@ -521,26 +521,29 @@ Sections:
 - explanation that browser/PWA storage can be removed by the OS or browser
 - recommendation to export JSON regularly
 
-## Cloud Backup (future, not in V1)
+## Cloud Backup
 
-Not shown until a cloud provider is implemented.
+Optional, off by default. Shown as "not set up" when the installation has no Dropbox app key.
 
-When disconnected:
+- switch "Automatic backup to Dropbox": turning it on connects Dropbox (sign-in page, then
+  back to Settings); when connected it pauses/resumes automatic backup
+- account (name, email), last backup time, "newer changes on this device" when not yet backed up
+- [ Back up now ] [ Restore from Dropbox… ]: versions with time and device ("this device",
+  "from Mac"); restore uses the same summary and Replace confirmation as importing a file
+- errors are shown (e.g. "Dropbox needs to be connected again", "Your Dropbox is full")
+- [ Disconnect Dropbox ] with confirmation; local data and the backups in Dropbox stay
+- a recent cloud backup counts like an export for the export reminder
 
-[ Connect Cloud ]
+Global (any screen), when automatic backup is on and online:
 
-When connected:
-
-Account
-
-Last backup:
-03 October 2026 21:00
-
-[ Backup Now ]
-
-[ Restore Backup ]
-
-[ Disconnect ]
+- backs up after 30 s without edits, at most every 2 minutes, and right away when the app is
+  left (other app, lock, close); after a rate limit (429) it waits silently as asked
+- checks for newer backups from other devices on start / return to the app, at most every
+  5 minutes
+- on start / return to the app: if another device backed up newer data, a sheet offers
+  "Load it (replace data on this device)", "Keep this device's data and back it up" (only
+  when this device has changes not in Dropbox) and "Not now"; nothing is replaced or
+  uploaded over it without this choice
 
 ## Application
 

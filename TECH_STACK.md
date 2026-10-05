@@ -263,11 +263,19 @@ Rules:
 
 ## Cloud
 
-Cloud backup is a future feature. No provider is chosen and none is implemented in V1.
+Cloud backup is optional (off by default). The provider is Dropbox (Phase 12), called
+directly from the browser with `fetch` (no SDK dependency): OAuth 2 with PKCE and a refresh
+token, App folder access only, backups in `/backups`. Configuration: the public app key in
+`NEXT_PUBLIC_DROPBOX_APP_KEY`; without it, cloud backup is shown as not set up.
 
-Cloud backup must be abstracted behind a CloudBackupProvider interface.
+Cloud backup is abstracted behind a CloudBackupProvider interface (`src/lib/cloud/types.ts`).
 
-Conceptual interface:
+Request volume (`src/lib/cloud/policy.ts`): free accounts have no monthly call limit, only a
+per-user rate limit (429 + Retry-After). Backups run after 30 s without edits, at most every
+2 minutes, and when the app is left; a 429 pauses all requests for the Retry-After time.
+Kept versions: the 5 newest plus the last of each of the past 14 days.
+
+Conceptual interface (the implemented one adds listing, downloading and deleting versions):
 
 ```ts
 interface CloudBackupProvider {
@@ -279,7 +287,7 @@ interface CloudBackupProvider {
 }
 ```
 
-Constraints for a future provider:
+Constraints for the provider:
 
 - Prefer client-side authentication (e.g. OAuth with PKCE) that requires no custom backend and no client secret.
 - Must account for OAuth redirect behavior in iOS standalone PWAs.

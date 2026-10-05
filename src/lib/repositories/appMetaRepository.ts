@@ -15,6 +15,10 @@ export function createAppMetaRepository(db: TravelDatabase) {
       const record = { key, value, updatedAt: nowInstant() } as AppMetaRecord;
       await db.appMeta.put(record);
     },
+
+    async remove(key: AppMetaKey): Promise<void> {
+      await db.appMeta.delete(key);
+    },
   };
 }
 
