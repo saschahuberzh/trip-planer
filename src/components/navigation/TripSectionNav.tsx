@@ -1,19 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { TRIP_SECTIONS, appRoutePath, tripSectionOf, type TripSection } from "@/lib/routing/routes";
+import { appRoutePath, tripSectionOf, type TripSection } from "@/lib/routing/routes";
 import { useAppRoute } from "@/lib/routing/useAppRoute";
 
-const SECTION_LABELS: Record<TripSection, string> = {
-  plan: "Plan",
-  map: "Map",
-  places: "Places",
-  budget: "Budget",
-  accommodation: "Accommodation",
-  bookings: "Bookings",
-};
+interface Tab {
+  label: string;
+  /** Section the tab opens. */
+  section: TripSection;
+  /** Sections shown as this tab. */
+  sections: readonly TripSection[];
+}
 
-const tabClass = "flex min-h-11 shrink-0 items-center rounded-full px-4 text-sm font-medium";
+// Accommodation and other bookings share one tab (switch inside, see BookingsViewSwitch).
+const TABS: readonly Tab[] = [
+  { label: "Plan", section: "plan", sections: ["plan"] },
+  { label: "Map", section: "map", sections: ["map"] },
+  { label: "Places", section: "places", sections: ["places"] },
+  { label: "Budget", section: "budget", sections: ["budget"] },
+  { label: "Bookings", section: "accommodation", sections: ["accommodation", "bookings"] },
+];
+
+// Narrower on phones so all five tabs fit a 390 px wide screen.
+const tabClass = "flex min-h-11 shrink-0 items-center rounded-full px-2.5 text-sm font-medium lg:px-4";
 
 /** Horizontally scrollable trip section tabs. Links are built from the URL's trip ID. */
 export function TripSectionNav() {
@@ -23,20 +32,19 @@ export function TripSectionNav() {
 
   return (
     <nav aria-label="Trip sections" className="border-b border-slate-200 bg-white">
-      <ul className="mx-auto flex max-w-md gap-2 overflow-x-auto px-4 py-2 lg:max-w-6xl lg:flex-wrap lg:overflow-visible lg:px-8 lg:py-3">
-        {TRIP_SECTIONS.map((section) => {
-          const label = SECTION_LABELS[section];
+      <ul className="mx-auto flex max-w-md gap-1.5 overflow-x-auto px-4 py-2 lg:max-w-6xl lg:flex-wrap lg:gap-2 lg:overflow-visible lg:px-8 lg:py-3">
+        {TABS.map(({ label, section, sections }) => {
           // Before hydration the trip ID is unknown; render inert tabs.
           if (tripId === null) {
             return (
-              <li key={section}>
+              <li key={label}>
                 <span className={`${tabClass} text-slate-400`}>{label}</span>
               </li>
             );
           }
-          const active = section === activeSection;
+          const active = activeSection !== null && sections.includes(activeSection);
           return (
-            <li key={section}>
+            <li key={label}>
               <Link
                 href={appRoutePath({ name: "trip-section", tripId, section })}
                 aria-current={active ? "page" : undefined}

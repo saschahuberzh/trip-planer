@@ -23,14 +23,16 @@ test("all features can be used offline", async ({ context, page }) => {
   await expect(page.locator("main")).toContainText("Registan Samarkand");
 
   // Day view: place of the day, visit a place, transport.
-  await page.goto(`${trip}/plan`);
+  await page.goto(`${trip}/plan?view=days`);
   await page.locator("article").first().getByRole("link").first().tap();
   await page.getByRole("button", { name: "Add place of the day" }).tap();
   await sheet(page).getByRole("button", { name: /Registan Samarkand/ }).tap();
   await noOpenSheet(page);
+  await page.getByRole("button", { name: "Add", exact: true }).tap();
   await page.getByRole("button", { name: "Visit a place" }).tap();
   await sheet(page).getByRole("button", { name: /Registan Samarkand/ }).tap();
   await noOpenSheet(page);
+  await page.getByRole("button", { name: "Add", exact: true }).tap();
   await page.getByRole("button", { name: "Add transport" }).tap();
   await sheet(page).getByRole("textbox", { name: "From" }).fill("Tashkent");
   await sheet(page).getByRole("textbox", { name: "To" }).fill("Samarkand");

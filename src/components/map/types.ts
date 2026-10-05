@@ -9,6 +9,8 @@ export interface MapViewProps {
   markers: readonly MapMarker[];
   /** Straight segments between stops; segments with a transport show its symbol. */
   segments?: readonly MapSegment[];
+  /** false: no connecting lines (transport symbols stay), e.g. a single day. Default true. */
+  showLines?: boolean;
   selectedPlaceId?: string | null;
   selectedStayId?: string | null;
   /** Called with a place ID, or null when the empty map is tapped. */

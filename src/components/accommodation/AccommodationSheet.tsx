@@ -10,12 +10,13 @@ import {
   type AccommodationFormErrors,
   type AccommodationFormValues,
 } from "@/lib/services/accommodationForm";
-import { nightsOf } from "@/lib/services/accommodationSchedule";
+import { nightsOf, overlappingStays, type StayOverlap } from "@/lib/services/accommodationSchedule";
 import { getAccommodationService } from "@/lib/services/accommodationService";
 import { placesCenter } from "@/lib/services/placeFilters";
 import { Button } from "@/components/ui/Button";
 import { ConfirmBody } from "@/components/ui/ConfirmBody";
-import { TrashIcon } from "@/components/ui/icons";
+import { AlertIcon, TrashIcon } from "@/components/ui/icons";
+import { formatDayDate } from "@/components/itinerary/itineraryDisplay";
 import { Sheet } from "@/components/ui/Sheet";
 import { PriceField } from "@/components/forms/PriceField";
 import { Field, inputClass } from "@/components/trips/formFields";
@@ -31,6 +32,8 @@ type AccommodationSheetProps = {
   tripId: string;
   baseCurrency: string;
   places: ReadonlyMap<string, Place>;
+  /** The trip's accommodations, to warn about overlapping nights. */
+  stays: readonly Accommodation[];
   target: AccommodationSheetTarget | null;
   onClose: () => void;
 };
@@ -69,7 +72,7 @@ type AccommodationFormProps = Omit<AccommodationSheetProps, "target" | "onClose"
   onDelete: () => void;
 };
 
-function AccommodationForm({ tripId, baseCurrency, places, target, onBusyChange, onDone, onDelete }: AccommodationFormProps) {
+function AccommodationForm({ tripId, baseCurrency, places, stays, target, onBusyChange, onDone, onDelete }: AccommodationFormProps) {
   const [values, setValues] = useState<AccommodationFormValues>(() =>
     target.mode === "edit"
       ? accommodationToFormValues(target.accommodation, baseCurrency)
@@ -90,6 +93,10 @@ function AccommodationForm({ tripId, baseCurrency, places, target, onBusyChange,
 
   const valid = validateAccommodationForm(values);
   const nights = valid.ok ? nightsOf(valid.input) : undefined;
+  // A warning only: two stays on one night can be deliberate (e.g. two rooms).
+  const overlaps = valid.ok
+    ? overlappingStays(stays, { id: target.mode === "edit" ? target.accommodation.id : undefined, ...valid.input })
+    : [];
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -213,6 +220,14 @@ function AccommodationForm({ tripId, baseCurrency, places, target, onBusyChange,
       </div>
       {nights !== undefined && (
         <p className="-mt-3 text-sm text-slate-600">{nights === 0 ? "No night (day use)" : nights === 1 ? "1 night" : `${nights} nights`}</p>
+      )}
+      {overlaps.length > 0 && (
+        <p role="status" className="flex gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-amber-200">
+          <AlertIcon className="size-5 shrink-0 text-amber-600" />
+          <span>
+            Overlaps with {overlaps.map(overlapLabel).join(", ")}. You can still save it, e.g. for a second room.
+          </span>
+        </p>
       )}
 
       {place === undefined && (
@@ -367,4 +382,11 @@ function DeleteAccommodation({
       This can&apos;t be undone.
     </ConfirmBody>
   );
+}
+
+/** e.g. "Hotel Uzbekistan (night of Sun, 13 Jun)". */
+function overlapLabel({ accommodation, nights }: StayOverlap): string {
+  const first = formatDayDate(nights[0]);
+  const range = nights.length === 1 ? `night of ${first}` : `nights of ${first} – ${formatDayDate(nights[nights.length - 1])}`;
+  return `${accommodation.name} (${range})`;
 }

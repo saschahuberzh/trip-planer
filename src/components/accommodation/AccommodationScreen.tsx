@@ -12,6 +12,7 @@ import { formatMoney } from "@/components/trips/tripDisplay";
 import { AccommodationSheet, type AccommodationSheetTarget } from "./AccommodationSheet";
 import { stayDates, stayLocation } from "./stayDisplay";
 import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
+import { BookingsViewSwitch } from "@/components/bookings/BookingsViewSwitch";
 
 /** All accommodation of the trip, chronologically. */
 export function AccommodationScreen() {
@@ -43,6 +44,7 @@ function AccommodationContent({ itinerary }: { itinerary: Itinerary }) {
 
   return (
     <section className="mx-auto max-w-md space-y-3 px-4 py-5 lg:max-w-6xl lg:px-8 lg:py-8">
+      <BookingsViewSwitch tripId={trip.id} current="accommodation" />
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-slate-600">
           {tripNights === 0
@@ -87,6 +89,7 @@ function AccommodationContent({ itinerary }: { itinerary: Itinerary }) {
         tripId={trip.id}
         baseCurrency={trip.baseCurrency}
         places={places}
+        stays={accommodations}
         target={target}
         onClose={() => setTarget(null)}
       />

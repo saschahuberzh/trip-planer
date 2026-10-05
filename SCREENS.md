@@ -88,7 +88,8 @@ Shown on every trip screen:
 
 - trip name, countries, dates
 - edit trip button (opens Create / Edit Trip)
-- section navigation: Plan, Map, Places, Budget, Accommodation, Bookings
+- section navigation: Plan, Map, Places, Budget, Bookings (Bookings covers Accommodation
+  and Other bookings; all five fit a 390 px phone screen)
   (scrollable tab bar on phones; all sections visible on large screens)
 
 Back to the trips list is in the global navigation. Deleting a trip is in the trips list
@@ -99,7 +100,38 @@ Trip-only export is not part of V1. Full export is available in Settings.
 
 # 4. Plan / Itinerary
 
-Chronological itinerary.
+Chronological itinerary. A switch at the top shows it as **Calendar** (default) or **Days**
+(kept in the URL as `?view=calendar&month=YYYY-MM` or `?view=days`). The Day View's
+"All days" link opens Days.
+
+Days view (agenda):
+
+- per day a slim header with a date tile (weekday, day of month), day number, title or
+  places, and "+" (Activity / Place / Transport inline); it sticks to the top while
+  scrolling through that day; tapping it opens the Day View
+- day notes are not shown in the list (they are in the Day View)
+- below it, in the order of the day: check-outs (stays ending that day), the entries along
+  the timeline, and the night's accommodation (where you sleep: check-in or night x of y)
+- the Day View shows the day's accommodation in its own card (see Day View)
+- reordering happens in the Day View; Unplanned keeps "+ Add" and "Reorder"
+
+Calendar view:
+
+- one month at a time (Monday–Sunday weeks); previous/next buttons move between the
+  months of the trip only; it opens on today's month during the trip, else the first month
+- every day has a box of the same size, and every month shows six week rows, so the
+  calendar keeps its size when switching months; days outside the trip are greyed out
+  (like disabled) and not tappable
+- each trip day shows its places of the day (travel days: both); one colour per place,
+  so consecutive days at the same place read as a block
+- a dot right of the day number shows the night's accommodation: violet if an
+  accommodation covers that night (check-in ≤ date < check-out), grey if not (e.g. the
+  last day); violet is reserved for accommodation and not used as a place colour
+- tapping a day opens the Day View
+- "Where you are" list (collapsed by default, header shows the number of places): place, days and nights (the night counts for the day's last place,
+  not on the trip's last day)
+- empty state: hint to add places of the day
+- days outside the trip dates are not in the calendar; a note points to Days
 
 Example:
 
@@ -152,15 +184,28 @@ Timeline entries:
 
 # 5. Day View
 
-Displays:
+Displays (in this order on phones):
 
-- date
-- optional title
-- places of the day: add (select existing / create new place), reorder, remove
-- map preview
-- timeline of activities and transport (user-defined order)
-- accommodation for the night
-- notes
+- page heading (not a card): day number, date; a notes icon to add notes (only while the
+  day has none); places of the day as chips (tap opens the place; a dashed "+ Place" chip
+  adds one; the pencil switches to editing, where each chip has × and neighbours can be
+  swapped with ⇄; "Done" ends it)
+- timeline card (no title): activities and transport along a vertical line (filled dot =
+  timed), user-defined order; "+ Add" (Activity / Place / Transport inline) and "Reorder"
+  at the bottom
+- accommodation card ("Accommodation", "+ Add" on the right): in the order of the day,
+  check-outs, then the night's stay (check-in or night x of y); "No accommodation for the
+  night." when no stay covers the night
+- map preview (no title): the whole preview opens the map ("Open map" label)
+- notes card ("Notes", "Edit" on the right), only when the day has notes
+
+Card pattern: a title only where the content needs one; actions sit in the title row on the
+right (or below the list for the timeline); dividers only between list items.
+
+Day titles are not offered for new days (the places of the day say where you are); an
+existing title is still shown and stays editable in the notes editor so it can be cleared.
+
+Large screens: heading and timeline on the left; accommodation, map preview and notes on the right.
 
 Actions:
 
@@ -220,7 +265,8 @@ Views:
 - **Day**: one selected day — its timeline in order (activity places; for transports their origin
   and destination), preceded by the places of the day that come before the first place the
   timeline already contains (e.g. "Samarkand", then the day's sights). Without timeline places,
-  the places of the day alone. Numbered and connected; the segment of a transport shows its symbol.
+  the places of the day alone. Numbered, without connecting lines; a transport's symbol is
+  shown between its origin and destination. The Day View's map preview looks the same.
 
 Connections (transport):
 
@@ -393,7 +439,11 @@ A "create expense" shortcut from those entities may prefill an expense.
 
 ---
 
-# 10. Accommodation
+# 10. Bookings tab: Accommodation
+
+Accommodation and other bookings share the **Bookings** tab. A switch at the top shows
+**Accommodation** (opened first, `/trips/<id>/accommodation`) or **Other bookings**
+(`/trips/<id>/bookings`); both URLs stay valid, and switching does not add history entries.
 
 Displays all accommodation chronologically, with how many nights of the trip have no accommodation.
 Accommodation is also shown on the days of the stay (check-in / night x of y / check-out)
@@ -410,7 +460,14 @@ Each entry:
 
 ---
 
-# 11. Bookings
+Accommodation form: when the dates share a night with another stay of the trip, a warning
+names it ("Overlaps with … (night of …)"); saving is still allowed (e.g. a second room).
+A check-out on another stay's check-in day is no overlap. The Day View header offers
+"Add accommodation" only when no stay covers that night.
+
+---
+
+# 11. Bookings tab: Other bookings
 
 Sections:
 

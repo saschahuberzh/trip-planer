@@ -117,6 +117,7 @@ function transportElement(segment: MapSegment & { transport: NonNullable<MapSegm
 export default function MapLibreMapView({
   markers,
   segments = [],
+  showLines = true,
   selectedPlaceId = null,
   selectedStayId = null,
   onSelectPlace,
@@ -246,7 +247,7 @@ export default function MapLibreMapView({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || status !== "ready") return;
-    const data = segmentData(segments);
+    const data = segmentData(showLines ? segments : []);
     const source = map.getSource<GeoJSONSource>(LINE_SOURCE);
     if (source) {
       source.setData(data);
@@ -273,7 +274,7 @@ export default function MapLibreMapView({
         },
       });
     }
-  }, [segments, status]);
+  }, [segments, showLines, status]);
 
   // Fit to markers and line whenever fitKey changes.
   useEffect(() => {

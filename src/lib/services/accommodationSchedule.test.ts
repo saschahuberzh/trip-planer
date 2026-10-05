@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Accommodation } from "@/lib/domain/types";
-import { nightCoverage, nightsOf, sortAccommodations, staysOnDate } from "./accommodationSchedule";
+import { nightCoverage, nightStaysOnDate, nightsOf, overlappingStays, sortAccommodations, staysOnDate } from "./accommodationSchedule";
 
 const meta = { createdAt: "2026-10-03T19:00:00.000Z", updatedAt: "2026-10-03T19:00:00.000Z" };
 const stay = (id: string, checkInDate: string, checkOutDate: string): Accommodation => ({
@@ -35,6 +35,35 @@ describe("staysOnDate", () => {
     const dayRoom = stay("Day room", "2026-06-15", "2026-06-15");
     expect(nightsOf(dayRoom)).toBe(0);
     expect(staysOnDate([dayRoom], "2026-06-15")).toEqual([{ accommodation: dayRoom, role: "check-in", night: undefined, nights: 0 }]);
+  });
+});
+
+describe("nightStaysOnDate", () => {
+  it("keeps where the traveller sleeps and leaves out check-outs", () => {
+    expect(nightStaysOnDate([samarkand, tashkent], "2026-06-14").map((item) => [item.accommodation.id, item.role])).toEqual([
+      ["Guesthouse Samarkand", "check-in"],
+    ]);
+    expect(nightStaysOnDate([tashkent], "2026-06-13").map((item) => item.role)).toEqual(["night"]);
+    expect(nightStaysOnDate([tashkent], "2026-06-14")).toEqual([]);
+  });
+});
+
+describe("overlappingStays", () => {
+  it("finds shared nights, ignoring the stay itself and back-to-back stays", () => {
+    // Tashkent 12–14, Samarkand 14–16: check-out and check-in on the same day is fine.
+    expect(overlappingStays([tashkent, samarkand], { checkInDate: "2026-06-14", checkOutDate: "2026-06-16" })).toEqual([
+      { accommodation: samarkand, nights: ["2026-06-14", "2026-06-15"] },
+    ]);
+    expect(overlappingStays([tashkent], { checkInDate: "2026-06-14", checkOutDate: "2026-06-16" })).toEqual([]);
+    expect(overlappingStays([tashkent, samarkand], { id: "Guesthouse Samarkand", checkInDate: "2026-06-13", checkOutDate: "2026-06-16" })).toEqual([
+      { accommodation: tashkent, nights: ["2026-06-13"] },
+    ]);
+  });
+
+  it("never overlaps with a stay without a night", () => {
+    const dayRoom = stay("Day room", "2026-06-13", "2026-06-13");
+    expect(overlappingStays([dayRoom], { checkInDate: "2026-06-12", checkOutDate: "2026-06-14" })).toEqual([]);
+    expect(overlappingStays([tashkent], { checkInDate: "2026-06-13", checkOutDate: "2026-06-13" })).toEqual([]);
   });
 });
 

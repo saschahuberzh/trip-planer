@@ -184,6 +184,8 @@ function MapContent({ itinerary }: { itinerary: Itinerary }) {
           <MapView
             markers={model.markers}
             segments={model.segments}
+            // A single day shows its stops without connecting lines.
+            showLines={state.view !== "day"}
             selectedPlaceId={selectedId}
             selectedStayId={selectedStayId}
             onSelectPlace={selectPlace}

@@ -44,8 +44,10 @@ export async function createTrip(page: Page, { name, start, end }: TripFields): 
 
 /** Adds an activity to the first day card of the Plan screen. */
 export async function addActivityToFirstDay(page: Page, tripPath: string, title: string): Promise<void> {
-  await page.goto(`${tripPath}/plan`);
-  await page.locator("article").first().getByRole("button", { name: "Add activity" }).tap();
+  await page.goto(`${tripPath}/plan?view=days`);
+  const firstDay = page.locator("article").first();
+  await firstDay.getByRole("button", { name: /^Add to Day/ }).tap();
+  await firstDay.getByRole("button", { name: "Add activity" }).tap();
   await sheet(page).getByLabel("Title").fill(title);
   await sheet(page).getByRole("button", { name: "Add activity" }).tap();
   await noOpenSheet(page);

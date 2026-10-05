@@ -9,11 +9,14 @@ import { Sheet } from "@/components/ui/Sheet";
 import { Field, inputClass } from "@/components/trips/formFields";
 import { entryTitle, formatDayDateLong } from "./itineraryDisplay";
 
-/** Edit a day's optional title and notes. */
+/**
+ * A day's notes. Day titles are no longer offered for new days (the places of the day say
+ * where you are); an existing title stays editable here so it can be changed or cleared.
+ */
 export function DayDetailsSheet({ day, onClose }: { day: TripDay | null; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   return (
-    <Sheet open={day !== null} onClose={onClose} title="Edit day" dismissible={!busy}>
+    <Sheet open={day !== null} onClose={onClose} title="Notes" dismissible={!busy}>
       {day !== null && <DayDetailsForm day={day} onBusyChange={setBusy} onDone={onClose} />}
     </Sheet>
   );
@@ -58,29 +61,32 @@ function DayDetailsForm({
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <p className="text-sm font-medium text-slate-600">{formatDayDateLong(day.date)}</p>
-      <Field label="Title (optional)" error={titleError} hint="e.g. the city you're in">
-        {(props) => (
-          <input
-            {...props}
-            value={values.title}
-            onChange={(event) => {
-              setValues((current) => ({ ...current, title: event.target.value }));
-              setTitleError(undefined);
-            }}
-            placeholder="e.g. Tashkent"
-            autoComplete="off"
-            enterKeyHint="done"
-            className={inputClass}
-          />
-        )}
-      </Field>
-      <Field label="Notes (optional)">
+      {day.title !== undefined && (
+        <Field label="Title (optional)" error={titleError} hint="Clear it to show the places of the day instead">
+          {(props) => (
+            <input
+              {...props}
+              value={values.title}
+              onChange={(event) => {
+                setValues((current) => ({ ...current, title: event.target.value }));
+                setTitleError(undefined);
+              }}
+              placeholder="e.g. Tashkent"
+              autoComplete="off"
+              enterKeyHint="done"
+              className={inputClass}
+            />
+          )}
+        </Field>
+      )}
+      <Field label="Notes">
         {(props) => (
           <textarea
             {...props}
             value={values.notes}
             onChange={(event) => setValues((current) => ({ ...current, notes: event.target.value }))}
-            rows={4}
+            rows={6}
+            autoFocus
             placeholder="Reminders, ideas, what to pack…"
             className={inputClass}
           />

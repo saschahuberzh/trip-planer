@@ -34,11 +34,17 @@ type TimelineListProps = {
   onOpenActivity: (activity: Activity) => void;
   onOpenTransport: (transport: Transport) => void;
   onMoveEntry: (entry: TimelineEntry) => void;
+  /**
+   * "footer": "+ Add" and "Reorder" below the entries (Day View, Unplanned).
+   * "none": entries only; adding happens elsewhere (Plan day list header).
+   */
+  controls?: "footer" | "none";
 };
 
 /**
- * One bucket's timeline in user-defined order. "Reorder" mode shows large
- * up/down/move buttons for each entry, which work reliably with touch input.
+ * One bucket's timeline in user-defined order, drawn along a vertical line (filled dots for
+ * timed entries). "Reorder" mode shows large up/down/move buttons for each entry, which work
+ * reliably with touch input.
  */
 export function TimelineList({
   entries,
@@ -52,8 +58,10 @@ export function TimelineList({
   onOpenActivity,
   onOpenTransport,
   onMoveEntry,
+  controls = "footer",
 }: TimelineListProps) {
   const [reordering, setReordering] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const editing = reordering && entries.length > 0;
@@ -77,7 +85,7 @@ export function TimelineList({
       {entries.length === 0 ? (
         <div className="px-4 py-3 text-sm text-slate-600">{emptyState}</div>
       ) : (
-        <ol className="divide-y divide-slate-100" aria-busy={busy}>
+        <ol className="py-1" aria-busy={busy}>
           {entries.map((entry, index) => (
             <li key={`${entry.kind}:${entry.item.id}`}>
               <EntryRow
@@ -130,9 +138,9 @@ export function TimelineList({
         </p>
       )}
 
-      <div className="flex gap-2 border-t border-slate-100 p-2">
-        {editing ? (
-          <>
+      {controls === "footer" &&
+        (editing ? (
+          <div className="flex gap-2 px-2 pb-2">
             {sortDate !== undefined && (
               <Button
                 variant="ghost"
@@ -147,53 +155,92 @@ export function TimelineList({
             <Button variant="secondary" onClick={() => setReordering(false)} className="flex-1">
               Done
             </Button>
-          </>
+          </div>
         ) : (
-          <>
-            <FooterButton label={ideas ? "Add idea" : "Add activity"} text={ideas ? "Idea" : "Activity"} onClick={onAdd}>
-              <PlusIcon />
-            </FooterButton>
-            {onAddPlace && (
-              <FooterButton label="Visit a place" text="Place" onClick={onAddPlace}>
-                <MapPinIcon />
-              </FooterButton>
+          <div>
+            <div className="flex items-center gap-2 px-2 pb-1">
+              <button
+                type="button"
+                aria-expanded={adding}
+                onClick={() => setAdding((open) => !open)}
+                className="flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-teal-700 hover:bg-slate-50"
+              >
+                <PlusIcon className={`size-5 transition-transform ${adding ? "rotate-45" : ""}`} />
+                Add
+              </button>
+              <span className="flex-1" />
+              {entries.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdding(false);
+                    setReordering(true);
+                  }}
+                  className="flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  <ReorderIcon className="size-4" />
+                  Reorder
+                </button>
+              )}
+            </div>
+            {adding && (
+              <AddChoices
+                ideas={ideas}
+                onAdd={onAdd}
+                onAddPlace={onAddPlace}
+                onAddTransport={onAddTransport}
+                onChosen={() => setAdding(false)}
+              />
             )}
-            <FooterButton label="Add transport" text="Transport" onClick={onAddTransport}>
-              <TrainIcon />
-            </FooterButton>
-            {entries.length > 0 && (
-              <FooterButton label="Reorder" text="Reorder" onClick={() => setReordering(true)} muted>
-                <ReorderIcon />
-              </FooterButton>
-            )}
-          </>
-        )}
-      </div>
+          </div>
+        ))}
     </div>
   );
 }
 
-function FooterButton({
-  label,
-  text,
-  onClick,
-  muted = false,
-  children,
+/** What can be added to a day (or Unplanned); shown inline after "+ Add". */
+export function AddChoices({
+  ideas = false,
+  onAdd,
+  onAddPlace,
+  onAddTransport,
+  onChosen,
 }: {
-  label: string;
-  text: string;
-  onClick: () => void;
-  muted?: boolean;
-  children: ReactNode;
+  ideas?: boolean;
+  onAdd: () => void;
+  onAddPlace?: () => void;
+  onAddTransport: () => void;
+  /** Called after a choice, e.g. to close the menu. */
+  onChosen?: () => void;
 }) {
+  const choose = (action: () => void) => () => {
+    onChosen?.();
+    action();
+  };
+  return (
+    <div className="flex gap-2 px-2 pb-2">
+      <Choice label={ideas ? "Add idea" : "Add activity"} text={ideas ? "Idea" : "Activity"} onClick={choose(onAdd)}>
+        <PlusIcon />
+      </Choice>
+      {onAddPlace && (
+        <Choice label="Visit a place" text="Place" onClick={choose(onAddPlace)}>
+          <MapPinIcon />
+        </Choice>
+      )}
+      <Choice label="Add transport" text="Transport" onClick={choose(onAddTransport)}>
+        <TrainIcon />
+      </Choice>
+    </div>
+  );
+}
+
+function Choice({ label, text, onClick, children }: { label: string; text: string; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className={`flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-xs font-semibold hover:bg-slate-100 ${
-        muted ? "text-slate-700" : "text-teal-700"
-      }`}
+      className="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl bg-teal-50 px-1 text-xs font-semibold text-teal-800 hover:bg-teal-100"
     >
       {children}
       {text}
@@ -219,7 +266,7 @@ function EntryRow({
   const notes = entry.item.notes;
   const content = (
     <>
-      <span className="w-14 shrink-0 pt-0.5 tabular-nums">
+      <span className="w-12 shrink-0 pt-0.5 text-right tabular-nums">
         {start !== undefined ? (
           <>
             <span className="block text-sm font-semibold text-slate-900">{start}</span>
@@ -231,9 +278,11 @@ function EntryRow({
             )}
           </>
         ) : (
-          <span className="block text-xs font-medium text-slate-500">No time</span>
+          <span className="block pt-0.5 text-xs font-medium text-slate-500">No time</span>
         )}
       </span>
+      {/* The timeline: a line through all entries, a filled dot for timed ones. */}
+      <Rail dot={start !== undefined ? "bg-teal-600" : "border-2 border-slate-300 bg-white"} />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 font-medium text-slate-900">
           {entry.kind === "transport" && (
@@ -267,18 +316,27 @@ function EntryRow({
     </>
   );
 
-  const timedAccent = start !== undefined ? "border-teal-600" : "border-transparent";
   return (
-    <div className={`flex min-h-14 items-center gap-2 border-l-4 pr-2 ${timedAccent}`}>
+    <div className="flex min-h-14 items-center gap-2 overflow-hidden pr-2">
       {onOpen ? (
-        <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-start gap-2 py-3 pl-3 text-left">
+        <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-start gap-3 py-3 pl-2 text-left hover:bg-slate-50">
           {content}
         </button>
       ) : (
-        <div className="flex min-w-0 flex-1 items-start gap-2 py-3 pl-3">{content}</div>
+        <div className="flex min-w-0 flex-1 items-start gap-3 py-3 pl-2">{content}</div>
       )}
       {controls}
     </div>
+  );
+}
+
+/** The vertical line through a day and the entry's dot. */
+function Rail({ dot }: { dot: string }) {
+  return (
+    <span aria-hidden="true" className="relative flex w-3 shrink-0 justify-center self-stretch">
+      <span className="absolute -inset-y-3 w-px bg-slate-200" />
+      <span className={`relative mt-1.5 size-2.5 rounded-full ${dot}`} />
+    </span>
   );
 }
 

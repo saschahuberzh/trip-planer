@@ -13,6 +13,7 @@ import { formatMoney } from "@/components/trips/tripDisplay";
 import { BOOKING_TYPE_LABELS, BOOKING_TYPE_SYMBOLS, bookingLinkOptions, formatBookingDateTime, linkKey, type LinkOption } from "./bookingDisplay";
 import { BookingSheet, type BookingSheetTarget } from "./BookingSheet";
 import { LoadError, ScreenSkeleton, TripNotFound } from "@/components/ui/ScreenState";
+import { BookingsViewSwitch } from "./BookingsViewSwitch";
 
 /** The trip's bookings: upcoming, without date, past. */
 export function BookingsScreen() {
@@ -52,6 +53,7 @@ function BookingsContent({ itinerary }: { itinerary: Itinerary }) {
 
   return (
     <section className="mx-auto max-w-md space-y-4 px-4 py-5 lg:max-w-6xl lg:px-8 lg:py-8">
+      <BookingsViewSwitch tripId={tripId} current="bookings" />
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-slate-600">
           {bookings.data.length === 0 ? "No bookings yet" : `${bookings.data.length} booking${bookings.data.length === 1 ? "" : "s"}`}

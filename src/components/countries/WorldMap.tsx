@@ -27,7 +27,7 @@ export function WorldMap(props: WorldMapProps) {
         </div>
       }
     >
-      <Suspense fallback={<div className={`flex items-center justify-center bg-slate-100 text-sm text-slate-500 ${className}`}>Loading map…</div>}>
+      <Suspense fallback={<div className={`flex items-center justify-center bg-slate-100 text-sm text-slate-600 ${className}`}>Loading map…</div>}>
         <WorldMapLibreView {...props} />
       </Suspense>
     </MapErrorBoundary>

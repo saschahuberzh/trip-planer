@@ -31,6 +31,22 @@ html {
   }
 }
 
+/*
+ * Selects look like the other fields (inputClass). With the native appearance, Safari/iOS
+ * ignores their height, padding and background, so they render small and different.
+ * Unlayered on purpose: it must win over the padding utilities of inputClass.
+ */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25rem;
+  padding-inline-end: 2.5rem;
+  text-overflow: ellipsis;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

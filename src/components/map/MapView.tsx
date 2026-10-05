@@ -16,7 +16,7 @@ export function MapView(props: MapViewProps) {
   const className = props.className ?? "";
   return (
     <MapErrorBoundary fallback={<MapUnavailable className={className} />}>
-      <Suspense fallback={<div className={`flex items-center justify-center bg-slate-100 text-sm text-slate-500 ${className}`}>Loading map…</div>}>
+      <Suspense fallback={<div className={`flex items-center justify-center bg-slate-100 text-sm text-slate-600 ${className}`}>Loading map…</div>}>
         <MapLibreMapView {...props} />
       </Suspense>
     </MapErrorBoundary>

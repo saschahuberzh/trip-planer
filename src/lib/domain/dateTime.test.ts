@@ -11,6 +11,7 @@ import {
   formatDurationMinutes,
   formatLocalDateTime,
   isCalendarDate,
+  isoWeekday,
   isLocalDateTime,
   isLocalDateTimeString,
   isValidTimeZone,
@@ -77,6 +78,15 @@ describe("calendar dates", () => {
       "30 Dec 2026 – 2 Jan 2027",
     );
     expect(formatCalendarDateRange("2026-06-12", "2026-06-12", "en-GB")).toBe("12 Jun 2026");
+  });
+});
+
+describe("isoWeekday", () => {
+  it("counts from Monday, independent of the device timezone", () => {
+    expect(isoWeekday("2027-06-14")).toBe(1);
+    expect(isoWeekday("2027-06-12")).toBe(6);
+    expect(isoWeekday("2027-06-13")).toBe(7);
+    expect(isoWeekday("2024-02-29")).toBe(4);
   });
 });
 

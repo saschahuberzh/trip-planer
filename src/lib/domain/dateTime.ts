@@ -68,6 +68,11 @@ export function addDays(date: string, days: number): string {
   return utcMsToCalendarDate(calendarDateToUtcMs(date) + days * MS_PER_DAY);
 }
 
+/** Day of the week of a calendar date: 1 = Monday … 7 = Sunday (ISO 8601). */
+export function isoWeekday(date: string): number {
+  return ((new Date(calendarDateToUtcMs(date)).getUTCDay() + 6) % 7) + 1;
+}
+
 /** All dates from start to end, inclusive. Empty if end < start. */
 export function eachDateInRange(start: string, end: string): string[] {
   const dates: string[] = [];

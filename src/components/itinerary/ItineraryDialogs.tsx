@@ -133,6 +133,7 @@ export function ItineraryDialogs({ itinerary, dialog, onClose, onDayDeleted }: I
         tripId={trip.id}
         baseCurrency={trip.baseCurrency}
         places={itinerary.places}
+        stays={itinerary.accommodations}
         target={
           dialog?.type === "create-accommodation"
             ? { mode: "create", checkInDate: dialog.checkInDate }

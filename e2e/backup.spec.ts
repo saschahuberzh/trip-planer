@@ -48,7 +48,7 @@ test("export and restore into a fresh installation; invalid files change nothing
   await expect(app.getByText("Backup restored (1 trip).")).toBeVisible();
   await expect(app.getByLabel("Safety backups").getByRole("button", { name: "Export" })).toHaveCount(1);
 
-  await app.goto(tripPath + "/plan");
+  await app.goto(tripPath + "/plan?view=days");
   await expect(app.getByRole("heading", { name: "Backup trip" })).toBeVisible();
   await expect(app.locator("article").first()).toContainText("Old town walk");
   await app.goto("/countries");

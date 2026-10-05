@@ -2,7 +2,7 @@
  * Which accommodation is shown on which day (DATA_MODEL.md "Itinerary Ordering"):
  * every date within [checkInDate, checkOutDate], as check-in, night or check-out.
  */
-import { addDays, compareCalendarDates, daysBetween } from "@/lib/domain/dateTime";
+import { addDays, compareCalendarDates, daysBetween, eachDateInRange } from "@/lib/domain/dateTime";
 import type { Accommodation, Trip } from "@/lib/domain/types";
 
 export type StayRole = "check-in" | "night" | "check-out";
@@ -37,6 +37,34 @@ export function staysOnDate(accommodations: readonly Accommodation[], date: stri
   return result.sort(
     (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.accommodation.name.localeCompare(b.accommodation.name),
   );
+}
+
+export interface StayOverlap {
+  accommodation: Accommodation;
+  /** Shared nights, named by their date, chronologically. */
+  nights: string[];
+}
+
+/**
+ * Other stays sharing at least one night with the given dates (e.g. a booking mistake, or
+ * deliberately two rooms). A check-out on another stay's check-in day is no overlap.
+ */
+export function overlappingStays(
+  accommodations: readonly Accommodation[],
+  stay: { id?: string; checkInDate: string; checkOutDate: string },
+): StayOverlap[] {
+  return sortAccommodations(accommodations).flatMap((other) => {
+    if (other.id === stay.id) return [];
+    const start = compareCalendarDates(other.checkInDate, stay.checkInDate) > 0 ? other.checkInDate : stay.checkInDate;
+    const end = compareCalendarDates(other.checkOutDate, stay.checkOutDate) < 0 ? other.checkOutDate : stay.checkOutDate;
+    if (compareCalendarDates(start, end) >= 0) return [];
+    return [{ accommodation: other, nights: eachDateInRange(start, addDays(end, -1)) }];
+  });
+}
+
+/** Stays covering the night of `date` (check-in or a following night), without check-outs. */
+export function nightStaysOnDate(accommodations: readonly Accommodation[], date: string): StayOnDate[] {
+  return staysOnDate(accommodations, date).filter((stay) => stay.role !== "check-out");
 }
 
 /** Chronological: by check-in date, then check-out date, then name. */

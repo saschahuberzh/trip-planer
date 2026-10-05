@@ -21,7 +21,7 @@ test("trips stay available and editable offline; offline trips open in every sec
   await app.goto("/");
   await expect(app.getByText("Offline · your trips are saved on this device.")).toBeVisible();
   await expect(app.getByRole("link", { name: /Silk Road/ }).first()).toBeVisible();
-  await app.goto(`${tripPath}/plan`);
+  await app.goto(`${tripPath}/plan?view=days`);
   await expect(app.locator("article").first()).toContainText("Registan");
 
   // 7. The trip can still be edited. Old trip links open the plan.
@@ -37,7 +37,7 @@ test("trips stay available and editable offline; offline trips open in every sec
   // 8. A trip created offline can be opened in every section (route templates).
   const offlineTrip = await createTrip(app, { name: "Offline trip", start: "2027-07-01", end: "2027-07-02" });
   const sections: [string, RegExp][] = [
-    ["plan", /Day 1/i],
+    ["plan", /Where you are/],
     ["map", /Route/],
     ["places", /Collect places to visit/],
     ["budget", /No expenses yet/],
@@ -50,9 +50,10 @@ test("trips stay available and editable offline; offline trips open in every sec
     await expect(app.getByRole("heading", { name: "Offline trip" })).toBeVisible();
     await expect(app.locator("main")).toContainText(content);
   }
+  // The plan opens with the calendar; a day opens from it.
   await app.goto(`${offlineTrip}/plan`);
-  await app.locator("article").first().getByRole("link").first().tap();
+  await app.getByRole("region", { name: "Calendar" }).getByRole("link", { name: /^Day 1,/ }).tap();
   await expect(app).toHaveURL(/\/plan\/[0-9a-f-]{36}$/);
   await app.reload();
-  await expect(app.getByText("Places of the day")).toBeVisible();
+  await expect(app.getByRole("button", { name: "Add place of the day" })).toBeVisible();
 });
